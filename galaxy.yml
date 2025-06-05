@@ -1,0 +1,25 @@
+---
+namespace: hczv
+name: firewall
+readme: README.md
+version: 1.0.0
+authors:
+  - Filip Winthereig <hczv@hotmail.dk>
+
+description: Collection of firewall configuraiton logic
+license_file: 'LICENSE'
+
+tags:
+  - linux
+  - firewall
+  - nftables
+  - dnsmasq
+
+dependencies: {}
+
+repository: https://github.com/hczv/ansible-firewall
+documentation: https://github.com/hczv/ansible-firewall
+homepage: https://github.com/hczv/ansible-firewall
+issues: https://github.com/hczv/ansible-firewall/issues
+
+build_ignore: []

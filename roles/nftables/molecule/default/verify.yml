@@ -1,0 +1,23 @@
+# my_role/molecule/default/verify.yml
+---
+- name: Verify
+  hosts: all
+  become: true
+  vars:
+    required_chains: ['input', 'forward', 'output', 'prerouting', 'postrouting']
+  tasks:
+    - name: Get nftables ruleset
+      ansible.builtin.command: nft list ruleset
+      register: nft_ruleset
+
+    - name: Check missing chains using substring matching
+      set_fact:
+        missing_chains: >-
+          {{
+            required_chains | reject('in', nft_ruleset.stdout) | list
+          }}
+
+    - name: Fail if any required chain is missing
+      ansible.builtin.fail:
+        msg: "Missing required chains: {{ missing_chains }}"
+      when: missing_chains | length > 0

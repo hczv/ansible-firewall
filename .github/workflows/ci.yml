@@ -1,0 +1,47 @@
+---
+name: CI
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+defaults:
+  run:
+    working-directory: ansible_collections/hczv/firewall
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the codebase.
+        uses: actions/checkout@v4
+        with:
+          path: "ansible_collections/hczv/firewall"
+
+      - name: Set up Python 3.
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install test dependencies.
+        run: python3 -m pip install --user -r requirements.txt
+
+      - name: Lint code.
+        run: |
+          yamllint .
+          ansible-lint
+  integration:
+    name: Integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: "${{ github.repository }}"
+      - uses: gofrolist/molecule-action@v2
+        with:
+          molecule_working_dir: hczv/ansible-firewall/roles/nftables
+          #  molecule_options: --debug --base-config molecule/_shared/base.yml
+          #  molecule_command: test
+          #  molecule_args: --scenario-name ${{ matrix.scenario }}

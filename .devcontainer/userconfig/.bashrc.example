@@ -1,0 +1,11 @@
+
+# Aliases
+alias ls="ls --color=auto"
+
+shopt -s histappend
+export PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
+export HISTFILE=/userconfig/.bash_history
+
+# Load fzf and set options
+eval "$(fzf --bash)"
+export FZF_DEFAULT_OPTS='--height 60% --tmux bottom,40% --layout reverse --border'

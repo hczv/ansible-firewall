@@ -1,0 +1,64 @@
+#jinja2: lstrip_blocks: True
+{% import "functions.nft.j2" as functions with context %}
+#!/usr/bin/env nft -f
+# Ansible managed
+
+##############################################
+############ Clear existing rules ############
+##############################################
+flush ruleset
+
+#############################################
+############ Add Standard ranges ############
+#############################################
+define ipv4_addr_rfc1918 = { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 }
+define ipv6_addr_ula = { fc00::/7 }
+
+##############################################
+############ Add Standard filters ############
+##############################################
+add table ip filter
+
+############################################
+############ Add default chains ############
+############################################
+{{ functions.defaultchains(nftables_global) }}
+
+###################################
+############ Add zones ############
+###################################
+{% for zone in nftables_zones | default([]) -%}
+{{ functions.create_zone(zone) }}
+{% endfor %}
+
+###################################
+############ Add sets ############
+###################################
+{% for set in nftables_sets | default([]) -%}
+{{ functions.create_set(set) }}
+{% endfor %}
+
+{% for set in nftables_dnsmasq_sets | default([]) -%}
+{{ functions.create_set(set, true) }}
+{% endfor %}
+
+#########################################
+############ Add input rules ############
+#########################################
+{% for input_rule in nftables_input_rules | default([]) -%}
+{{ functions.create_input_rule(input_rule, nftables_global) }}
+{% endfor %}
+
+###########################################
+############ Add forward rules ############
+###########################################
+{% for forward_rule in nftables_forward_rules | default([]) -%}
+{{ functions.create_forward_rule(forward_rule, nftables_global) }}
+{% endfor %}
+
+#######################################
+############ Add nat rules ############
+#######################################
+{% for nat_rule in nftables_nat | default([]) -%}
+{{ functions.create_nat_rule(nat_rule, nftables_global) }}
+{% endfor %}

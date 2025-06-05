@@ -1,0 +1,41 @@
+{
+    "name": "ansible-firewall container",
+    "dockerFile": "Dockerfile",
+    "mounts": [
+        "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
+        "source=${localWorkspaceFolder}/.devcontainer/userconfig,target=/userconfig,type=bind"
+    ],
+    "remoteUser": "vscode",
+    "postCreateCommand": "python3 -m pip install --user -r ${containerWorkspaceFolder}/requirements.txt",
+    "runArgs": [
+        "--privileged",
+        "--group-add=989"
+        //"--group-add=docker"
+        //"--group-add=$(getent group docker | cut -d: -f3)"
+    ],
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "terminal.integrated.shell.linux": "/bin/bash",
+                "diffEditor.renderSideBySide": true,
+                "editor.suggestSelection": "first",
+                "editor.tabSize": 4,
+                "editor.wordWrap": "bounded",
+                "editor.wordWrapColumn": 200,
+                "explorer.confirmDelete": false,
+                "explorer.confirmDragAndDrop": false
+            },
+            "extensions": [
+                "redhat.ansible",
+                "redhat.vscode-yaml",
+                "ms-azuretools.vscode-docker",
+                "numso.prettier-standard-vscode",
+                "EditorConfig.EditorConfig",
+                "adamhartford.vscode-base64",
+                "nhoizey.gremlins",
+                "github.copilot",
+                "wholroyd.jinja"
+            ]
+        }
+    }
+}

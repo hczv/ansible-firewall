@@ -1,0 +1,24 @@
+---
+dependency:
+  name: galaxy
+
+driver:
+  name: docker
+
+platforms:
+  - name: instance
+    build_image: true
+    dockerfile: Dockerfile
+    image: custom-molecule-image:latest
+    pre_build_image: false
+    privileged: true
+
+provisioner:
+  name: ansible
+  log: true
+  lint: |
+    yamllint .
+    ansible-lint
+
+verifier:
+  name: ansible

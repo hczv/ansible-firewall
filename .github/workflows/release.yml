@@ -1,0 +1,36 @@
+---
+name: Release
+on:
+  push:
+    tags:
+      - '*'
+
+defaults:
+  run:
+    working-directory: ansible_collections/hczv/firewall
+
+jobs:
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    env:
+      ANSIBLE_GALAXY_TOKEN: ${{ secrets.ANSIBLE_GALAXY_TOKEN }}
+      ANSIBLE_FORCE_COLOR: 1
+
+    steps:
+      - name: Check out the codebase.
+        uses: actions/checkout@v4
+        with:
+          path: ansible_collections/hczv/firewall
+
+      - name: Set up Python 3.
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install deps
+        run: python3 -m pip install --user -r requirements.txt
+
+      - name: Release to Ansible Galaxy.
+        run: ansible-playbook -i 'localhost,' galaxy-deploy.yml -e "github_tag=${{ github.ref }}"

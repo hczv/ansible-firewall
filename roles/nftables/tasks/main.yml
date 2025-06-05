@@ -1,0 +1,35 @@
+---
+- name: Include OS vars
+  ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
+
+- name: Install nftables
+  ansible.builtin.package:
+    name: nftables
+    state: present
+
+- name: Find old nftables files
+  ansible.builtin.find:
+    paths: "{{ nftables_config_path | dirname }}"
+    patterns: "nftables.conf.[0-9]*"
+    recurse: false
+  register: nftables_config_files
+
+- name: Delete old nftables files
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: >-
+    {{ (nftables_config_files.files | sort(attribute="mtime"))[:-2] }}
+
+- name: Create nftables configuration for {{ inventory_hostname }}
+  ansible.builtin.template:
+    src: nftables.conf.j2
+    dest: "{{ nftables_config_path }}"
+    mode: "u=rw,g=r,o=r"
+    backup: true
+    validate: "/usr/bin/env nft -cf %s"
+  notify:
+    - Restart nftables service
+
+- name: Restart nftables if needed
+  ansible.builtin.meta: flush_handlers

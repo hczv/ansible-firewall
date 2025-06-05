@@ -1,0 +1,145 @@
+{% macro loggingswitch(nftableslogging) %}
+{% if nftableslogging %}
+      log
+{%- endif %}
+{% endmacro %}
+
+{% macro defaultchains(nftables_global) -%}
+# Create input chain
+add chain ip filter input { type filter hook input priority filter; policy {{ nftables_global.default_policy.input | default("accept") }}; }
+
+# Create forward chain
+add chain ip filter forward { type filter hook forward priority filter; policy {{ nftables_global.default_policy.forward | default("drop") }}; }
+
+# Create output chain
+add chain ip filter output { type filter hook output priority filter; policy {{ nftables_global.default_policy.output | default("accept") }}; }
+
+# Create prerouting chain
+add chain ip filter prerouting { type nat hook prerouting priority dstnat; policy accept; }
+
+# Create postrouting chain
+add chain ip filter postrouting { type nat hook postrouting priority srcnat; policy accept; }
+{% endmacro %}
+
+{% macro create_zone(zone) -%}
+# Zone: {{ zone.name }}
+# Define interface set
+add set ip filter {{ zone.name }}_ifaces { type ifname; flags interval; }
+add element ip filter {{ zone.name }}_ifaces { {{ zone.interfaces | join(', ') }} }
+
+{%- if zone.subnets is defined and zone.subnets %}
+# Define Subnet set
+add set ip filter {{ zone.name }}_subnets { type ipv4_addr; flags interval; }
+add element ip filter {{ zone.name }}_subnets { {{ zone.subnets | join(', ') }} }
+{%- endif %}
+
+{%- if zone.allow_intrazone_traffic is defined and zone.allow_intrazone_traffic %}
+# Allow intra-zone traffic for {{ zone.name }}
+add rule ip filter forward iifname @{{ zone.name }}_ifaces oifname @{{ zone.name }}_ifaces accept
+{%- endif %}
+{% endmacro %}
+
+{% macro create_set(set, dnsmasq=false) %}
+{% if dnsmasq %}
+add set ip filter {{ set.name }}_set { type ipv4_addr; timeout 4h; }
+{% else %}
+define {{ set.name }}_alias = {{ '{ ' ~ (set.subnets | unique | join(', ')) ~ ' }' if set.subnets | unique | length > 1 else set.subnets | unique | first }}
+
+
+add set ip filter {{ set.name }}_set { type ipv4_addr; flags interval; }
+{% endif %}
+
+{% if set.subnets is defined and set.subnets %}
+add element ip filter {{ set.name }}_set { {{ set.subnets | join(', ') }} }
+{% endif %}
+{% endmacro %}
+
+{% macro create_input_rule(input_rule, nftables_global) -%}
+{% set input_base_rule = "add rule ip filter input iifname @" ~ input_rule.zone ~ "_ifaces" %}
+# {{ input_rule.name }}
+{% for proto, dst_ports in input_rule.destination_ports.items() %}
+    {% if input_rule.sources.subnets is defined and input_rule.sources.subnets -%}
+{{ create_generic_rule(input_rule, 'input', input_rule.zone, none, none, true, none, none, proto, src_port, dst_ports) }}
+    {% endif %}
+    {% if input_rule.sources.sets is defined and input_rule.sources.sets %}
+        {% for src_set in input_rule.sources.sets %}
+{{ create_generic_rule(input_rule, 'input', input_rule.zone, none, src_set, none, none, none, proto, src_port, dst_ports) }}
+        {% endfor %}
+    {% endif %}
+{% endfor %}
+{% endmacro %}
+
+{% macro create_forward_rule(forward_rule, nftables_global) %}
+# {{ forward_rule.name }}
+{% for proto, dst_ports in forward_rule.destination_ports.items() -%}
+  {% for source in forward_rule.sources -%}
+    {% for src_set in source.sets | default([]) -%}
+      {% for destination in forward_rule.destinations -%}
+        {% for dst_set in destination.sets | default([]) -%}
+{{ create_generic_rule(forward_rule, 'forward', source.zone, destination.zone, src_set, none, dst_set, none, proto, src_port, dst_ports) }}
+        {%- endfor %}
+        {%- if destination.subnets is defined and destination.subnets %}
+{{ create_generic_rule(forward_rule, 'forward', source.zone, destination.zone, src_set, none, none, true, proto, src_port, dst_ports) }}
+        {%- endif %}
+      {%- endfor %}
+    {%- endfor %}
+    {%- if source.subnets is defined and source.subnets %}
+      {% for destination in forward_rule.destinations -%}
+        {% for dst_set in destination.sets | default([]) -%}
+{{ create_generic_rule(forward_rule, 'forward', source.zone, destination.zone, none, true, dst_set, none, proto, src_port, dst_ports) }}
+        {%- endfor %}
+        {%- if destination.subnets is defined and destination.subnets -%}
+{{ create_generic_rule(forward_rule, 'forward', source.zone, destination.zone, none, true, none, true, proto, src_port, dst_ports) }}
+        {%- endif %}
+      {%- endfor %}
+    {%- endif %}
+  {%- endfor %}
+{%- endfor %}
+{% endmacro %}
+
+
+{% macro create_generic_rule(rule, chain, src_zone, dst_zone, src_set, src_subnet, dst_set, dst_subnet, proto, src_port, dst_ports) -%}
+add rule ip filter {{ chain }}
+{%- if src_zone is defined and src_zone %} iifname @{{ src_zone }}_ifaces {% endif -%}
+{%- if dst_zone is defined and dst_zone %} oifname @{{ dst_zone }}_ifaces {% endif -%}
+{%- if src_set is defined and src_set %} ip saddr @{{ src_set }}_set {% endif -%}
+{%- if src_subnet is defined and src_subnet %} ip saddr @{{ src_zone }}_subnets {% endif -%}
+{%- if dst_set is defined and dst_set %} ip daddr @{{ dst_set }}_set {% endif -%}
+{%- if dst_subnet is defined and dst_subnet %} ip daddr @{{ dst_zone }}_subnets {% endif -%}
+{{ proto }} dport {% if dst_ports | length > 1 %} { {{ dst_ports | join(', ') }} }{% else %} {{ dst_ports[0] }}{% endif %} counter
+{%- if rule.action is defined and rule.action %} {{ rule.action }} {% else %} accept {% endif -%}
+comment "{{ rule['name']|default('unspecified', true) }}"
+{% endmacro %}
+
+{% macro create_nat_rule(nat_rule, nftables_global) %}
+# {{ nat_rule.name }}
+{% if nat_rule.type == 'snat' %}
+{{ create_nat_snat_rule(nat_rule, nftables_global) }}
+{% endif %}
+{% if nat_rule.type == 'dnat' %}
+{{ create_nat_dnat_rule(nat_rule, nftables_global) }}
+{% endif %}
+{% endmacro %}
+
+
+{% macro create_nat_snat_rule(nat_rule, nftables_global) %}
+add rule ip filter postrouting
+{%- if nat_rule.source_zone is defined and nat_rule.source_zone %} iifname @{{ nat_rule.source_zone }}_ifaces {% endif -%}
+{%- if nat_rule.destination_zone is defined and nat_rule.destination_zone %} iifname @{{ nat_rule.destination_zone }}_ifaces {% endif -%} counter
+{%- if nat_rule.masquerade is defined and nat_rule.masquerade %} masquerade {% endif -%}
+{% endmacro %}
+
+{% macro create_nat_dnat_rule(nat_rule, nftables_global) %}
+{% for proto, dst_ports in nat_rule.ports.items() %}
+  {% for dport in dst_ports %}
+add rule ip filter prerouting
+{%- if nat_rule.source_zone is defined and nat_rule.source_zone %} iifname @{{ nat_rule.source_zone }}_ifaces {% endif -%}
+{%- if nat_rule.dnat_zone is defined and nat_rule.dnat_zone %} iifname @{{ nat_rule.dnat_zone }}_ifaces {% endif -%}
+{%- if nat_rule.source_set is defined and nat_rule.source_set %} ip saddr @{{ nat_rule.source_set }}_set {% endif -%}
+{%- if nat_rule.destination_set is defined and nat_rule.destination_set %} ip daddr @{{ nat_rule.destination_set }}_set {% endif -%}
+{{ proto }} dport { {{ dport.destination_port }} } counter dnat to ${{ nat_rule.dnat_set }}_alias{% if dport.destination_port != dport.to_port %}:{{ dport.to_port }}{% endif %}
+
+  {% endfor %}
+{% endfor %}
+{% endmacro %}
+
