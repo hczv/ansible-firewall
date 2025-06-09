@@ -19,6 +19,13 @@ add chain ip filter prerouting { type nat hook prerouting priority dstnat; polic
 
 # Create postrouting chain
 add chain ip filter postrouting { type nat hook postrouting priority srcnat; policy accept; }
+
+# Accept all traffic on the loopback interface
+nft add rule inet filter input iifname "lo" accept
+# Accept established and related connections, drop invalid ones
+nft add rule inet filter input ct state vmap { established: accept, related: accept, invalid: drop }
+nft add rule inet filter forward ct state vmap { established: accept, related: accept, invalid: drop }
+
 {% endmacro %}
 
 {% macro create_zone(zone) -%}
