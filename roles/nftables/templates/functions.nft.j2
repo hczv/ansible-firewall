@@ -132,7 +132,7 @@ comment "{{ rule['name']|default('unspecified', true) }}"
 {% macro create_nat_snat_rule(nat_rule, nftables_global) %}
 add rule ip filter postrouting
 {%- if nat_rule.source_zone is defined and nat_rule.source_zone %} iifname @{{ nat_rule.source_zone }}_ifaces {% endif -%}
-{%- if nat_rule.destination_zone is defined and nat_rule.destination_zone %} iifname @{{ nat_rule.destination_zone }}_ifaces {% endif -%} counter
+{%- if nat_rule.destination_zone is defined and nat_rule.destination_zone %} oifname @{{ nat_rule.destination_zone }}_ifaces {% endif -%} counter
 {%- if nat_rule.masquerade is defined and nat_rule.masquerade %} masquerade {% endif -%}
 {% endmacro %}
 
@@ -141,7 +141,7 @@ add rule ip filter postrouting
   {% for dport in dst_ports %}
 add rule ip filter prerouting
 {%- if nat_rule.source_zone is defined and nat_rule.source_zone %} iifname @{{ nat_rule.source_zone }}_ifaces {% endif -%}
-{%- if nat_rule.dnat_zone is defined and nat_rule.dnat_zone %} iifname @{{ nat_rule.dnat_zone }}_ifaces {% endif -%}
+{%- if nat_rule.dnat_zone is defined and nat_rule.dnat_zone %} oifname @{{ nat_rule.dnat_zone }}_ifaces {% endif -%}
 {%- if nat_rule.source_set is defined and nat_rule.source_set %} ip saddr @{{ nat_rule.source_set }}_set {% endif -%}
 {%- if nat_rule.destination_set is defined and nat_rule.destination_set %} ip daddr @{{ nat_rule.destination_set }}_set {% endif -%}
 {{ proto }} dport { {{ dport.destination_port }} } counter dnat to ${{ nat_rule.dnat_set }}_alias{% if dport.destination_port != dport.to_port %}:{{ dport.to_port }}{% endif %}
