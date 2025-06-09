@@ -1,0 +1,7 @@
+---
+- name: Stop and disable conflicting
+  ansible.builtin.service:
+    name: "{{ nftables_conflicting_services }}"
+    enabled: false
+    state: stopped
+  when: nftables_conflicting_services is defined
