@@ -142,8 +142,8 @@ add rule ip filter postrouting
 add rule ip filter prerouting
 {%- if nat_rule.source_zone is defined and nat_rule.source_zone %} iifname @{{ nat_rule.source_zone }}_ifaces {% endif -%}
 {%- if nat_rule.dnat_zone is defined and nat_rule.dnat_zone %} oifname @{{ nat_rule.dnat_zone }}_ifaces {% endif -%}
-{%- if nat_rule.source_set is defined and nat_rule.source_set %} ip saddr @{{ nat_rule.source_set }}_set {% endif -%}
-{%- if nat_rule.destination_set is defined and nat_rule.destination_set %} ip daddr @{{ nat_rule.destination_set }}_set {% endif -%}
+{%- if nat_rule.source_set is defined and nat_rule.source_set %} ip saddr @{{ nat_rule.source_set }} {% endif -%}
+{%- if nat_rule.destination_set is defined and nat_rule.destination_set %} ip daddr @{{ nat_rule.destination_set }} {% endif -%}
 {{ proto }} dport { {{ dport.destination_port }} } counter dnat to ${{ nat_rule.dnat_set }}{% if dport.destination_port != dport.to_port %}:{{ dport.to_port }}{% endif %}
 
   {% endfor %}
