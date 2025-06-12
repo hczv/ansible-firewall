@@ -48,16 +48,16 @@ add rule ip filter forward iifname @{{ zone.name }}_ifaces oifname @{{ zone.name
 
 {% macro create_set(set, dnsmasq=false) %}
 {% if dnsmasq %}
-add set ip filter {{ set.name }}_set { type ipv4_addr; timeout 4h; }
+add set ip filter {{ set.name }} { type ipv4_addr; timeout 4h; }
 {% else %}
-define {{ set.name }}_alias = {{ '{ ' ~ (set.subnets | unique | join(', ')) ~ ' }' if set.subnets | unique | length > 1 else set.subnets | unique | first }}
+define {{ set.name }} = {{ '{ ' ~ (set.subnets | unique | join(', ')) ~ ' }' if set.subnets | unique | length > 1 else set.subnets | unique | first }}
 
 
-add set ip filter {{ set.name }}_set { type ipv4_addr; flags interval; }
+add set ip filter {{ set.name }} { type ipv4_addr; flags interval; }
 {% endif %}
 
 {% if set.subnets is defined and set.subnets %}
-add element ip filter {{ set.name }}_set { {{ set.subnets | join(', ') }} }
+add element ip filter {{ set.name }} { {{ set.subnets | join(', ') }} }
 {% endif %}
 {% endmacro %}
 
@@ -109,9 +109,9 @@ add element ip filter {{ set.name }}_set { {{ set.subnets | join(', ') }} }
 add rule ip filter {{ chain }}
 {%- if src_zone is defined and src_zone %} iifname @{{ src_zone }}_ifaces {% endif -%}
 {%- if dst_zone is defined and dst_zone %} oifname @{{ dst_zone }}_ifaces {% endif -%}
-{%- if src_set is defined and src_set %} ip saddr @{{ src_set }}_set {% endif -%}
+{%- if src_set is defined and src_set %} ip saddr @{{ src_set }} {% endif -%}
 {%- if src_subnet is defined and src_subnet %} ip saddr @{{ src_zone }}_subnets {% endif -%}
-{%- if dst_set is defined and dst_set %} ip daddr @{{ dst_set }}_set {% endif -%}
+{%- if dst_set is defined and dst_set %} ip daddr @{{ dst_set }} {% endif -%}
 {%- if dst_subnet is defined and dst_subnet %} ip daddr @{{ dst_zone }}_subnets {% endif -%}
 {{ proto }} dport {% if dst_ports | length > 1 %} { {{ dst_ports | join(', ') }} }{% else %} {{ dst_ports[0] }}{% endif %} counter
 {%- if rule.action is defined and rule.action %} {{ rule.action }} {% else %} accept {% endif -%}
@@ -144,7 +144,7 @@ add rule ip filter prerouting
 {%- if nat_rule.dnat_zone is defined and nat_rule.dnat_zone %} oifname @{{ nat_rule.dnat_zone }}_ifaces {% endif -%}
 {%- if nat_rule.source_set is defined and nat_rule.source_set %} ip saddr @{{ nat_rule.source_set }}_set {% endif -%}
 {%- if nat_rule.destination_set is defined and nat_rule.destination_set %} ip daddr @{{ nat_rule.destination_set }}_set {% endif -%}
-{{ proto }} dport { {{ dport.destination_port }} } counter dnat to ${{ nat_rule.dnat_set }}_alias{% if dport.destination_port != dport.to_port %}:{{ dport.to_port }}{% endif %}
+{{ proto }} dport { {{ dport.destination_port }} } counter dnat to ${{ nat_rule.dnat_set }}{% if dport.destination_port != dport.to_port %}:{{ dport.to_port }}{% endif %}
 
   {% endfor %}
 {% endfor %}
