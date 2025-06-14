@@ -20,10 +20,14 @@
       chains:
         input:
           default_policy: drop
+    nftables_global_8:
+      chains:
+        forward:
+          default_policy: drop
     nftables_global_9:
       chains:
         forward:
-          default_policy: accept
+          default_policya: drop
       test: 9
       ttt: 2
       tes2: bbb
