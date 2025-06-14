@@ -3,6 +3,22 @@
   hosts: all
   become: true
   vars:
+    nftables_global:
+      default_policy:
+        input: reject
+        forward: drop
+        output: accept
+      logging:
+        enabled: true
+        level: info
+      rate_limit: 1000
+      counter: true
+    nftables_global_7:
+      default_policy:
+        input: drop
+    nftables_global_8:
+      default_policy:
+        input: accept
     nftables_globala:
       chains:
         input:
@@ -20,20 +36,6 @@
       chains:
         input:
           default_policy: drop
-    nftables_global_8:
-      chains:
-        forward:
-          default_policy: drop
-    nftables_global_9:
-      chains:
-        forward:
-          default_policya: drop
-      test: 9
-      ttt: 2
-      tes2: bbb
-      list:
-        - item1: aa
-          aa: aa
     nftables_global2:
       - tesaa: 1
     #  default_policy:
@@ -48,9 +50,9 @@
     nftables_global2_0:
       - test: 0
     nftables_global2_1:
-      - test: 1
+      - action: allow
     nftables_global2_9:
-      - test: 1
+      - action: allow
     nftables_zones:
       - name: wan
         interfaces:
@@ -64,6 +66,19 @@
           - 10.0.1.0/24
         allow_intrazone_traffic: true
       - name: lab
+        interfaces:
+          - eth3
+          - eth4
+        subnets:
+          - 10.13.33.0/24
+          - 10.14.44.0/24
+        allow_intrazone_traffic: true
+    nftables_zones_1:
+      - name: lan2
+        interfaces:
+          - eth4
+        allow_intrazone_traffic: true
+      - name: lab0
         interfaces:
           - eth3
           - eth4
