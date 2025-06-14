@@ -29,6 +29,13 @@ RUN wget https://github.com/junegunn/fzf/releases/download/v0.54.0/fzf-0.54.0-li
     tar -zxvf /tmp/fzf-0.54.0-linux_amd64.tar.gz -C /usr/local/bin && \
     rm -f /tmp/fzf-0.54.0-linux_amd64.tar.gz
 
+# Install git-chlog
+RUN mkdir /tmp/git-chlog && \
+    wget https://github.com/git-chglog/git-chglog/releases/download/v0.15.4/git-chglog_0.15.4_linux_amd64.tar.gz -P /tmp/git-chlog && \
+    tar -zxvf /tmp/git-chlog/git-chglog_0.15.4_linux_amd64.tar.gz -C /tmp/git-chlog && \
+    mv /tmp/git-chlog/git-chglog /usr/local/bin/git-chglog && \
+    rm -rf /tmp/git-chlog
+
 # Install docker-ce cli
 RUN dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo && \
     dnf install -y docker-ce-cli && \
