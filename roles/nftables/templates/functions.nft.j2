@@ -1,3 +1,117 @@
+{% macro does_var_exist(var) %}
+{% if vars.get(var, None) is not none and vars[var] != '' %}
+  --
+{% endif %}
+{% endmacro %}
+
+{% macro get_defined_vars(base) %}
+  {%- set vars_list = [base, base ~ '_default', base ~ '_global'] %}
+
+  {# First, check the vars in vars_list #}
+  {% for var_name in vars_list %}
+    {% set val = lookup('vars', var_name, default='') %}
+    {% if val %}
+      {{ var_name }} is defined!
+    {% endif %}
+  {% endfor %}
+
+  {# Now, check indexed variables base_0 ... base_9 #}
+  {% for i in range(10) %}
+    {% set var_name = '{}_{}'.format(base, i) %}
+    {% set val = lookup('vars', var_name, default='') %}
+    {% if val %}
+      {{ var_name }} is defined!
+    {% endif %}
+  {% endfor %}
+{% endmacro %}
+
+{% macro get_merged_var_list(base) %}
+  {%- set merged_list = [] %}
+  {%- set merged_dict = {} %}
+  {%- set candidates = [base, base ~ '_default'] %}
+  {%- for i in range(10) %}
+    {%- set candidates = candidates + ['{}_{}'.format(base, i)] %}
+  {%- endfor %}
+
+  {%- for var_name in candidates %}
+    {%- set val = lookup('vars', var_name, default=None) %}
+    {%- if val is not none %}
+      {%- if val is iterable and val is not string %}
+        {# It's iterable, check if list or dict #}
+        {%- if val is mapping %}
+          {# val is a dict, merge it #}
+          {%- for k,v in val.items() %}
+            {%- set _ = merged_dict.update({k:v}) %}
+          {%- endfor %}
+        {%- elif val is sequence %}
+          {# val is a list-like, extend merged_list #}
+          {%- set merged_list = merged_list + val %}
+        {%- endif %}
+      {%- else %}
+        {# scalar value, ignore or handle as needed #}
+      {%- endif %}
+    {%- endif %}
+  {%- endfor %}
+
+  {# Return both merged dict and merged list as a dict #}
+  {{ {'merged_dict': merged_dict, 'merged_list': merged_list} }}
+{% endmacro %}
+
+{% macro append_list(lst, item) %}
+  {{ lst + item }}
+{% endmacro %}
+
+{% macro get_merged_var_list2(base) %}
+{%- set ns = namespace(candidates=[base, base ~ '_default', base ~ '_global'], merged={}) %}
+{# counts 9,8,...,0 #}
+{%- for i in range(9, -1, -1) %}
+  {%- set _ = ns.candidates.append(base ~ '_' ~ i|string) %}
+{%- endfor %}
+{%- for var_name in ns.candidates %}
+  {%- set val = lookup('vars', var_name, default=[]) %}
+  {%- if val is iterable and val is not string and val|length > 0 %}
+    {%- for item in val %}
+      {%- for k, v in item.items() %}
+        {%- set _ = ns.merged.update({k: v}) %}
+      {%- endfor %}
+    {%- endfor %}
+  {%- endif %}
+{%- endfor %}
+{{ ns.merged | to_json }}
+{% endmacro %}
+
+{% macro get_merged_var_list3(base) %}
+{%- set ns = namespace(candidates=[base], merged=[]) %}
+{# counts 9,8,...,0 #}
+{%- for i in range(10) %}
+  {%- set _ = ns.candidates.append(base ~ '_' ~ i|string) %}
+{%- endfor %}
+{%- for var_name in ns.candidates %}
+  {%- set val = lookup('vars', var_name, default=[]) %}
+  {%- if val is iterable and val is not string and val|length > 0 %}
+    {%- set ns.merged = ns.merged + val %}
+  {%- endif %}
+{%- endfor %}
+{{ ns.merged | to_json }}
+{% endmacro %}
+
+{% macro get_merged_var_map3(base) %}
+{%- set ns = namespace(candidates=[base], merged={}) %}
+{# Prioritize more specific overrides (base_9 to base_0) #}
+{%- for i in range(10) %}
+  {%- set _ = ns.candidates.append(base ~ '_' ~ i|string) %}
+{%- endfor %}
+{%- for var_name in ns.candidates %}
+  {%- set val = lookup('vars', var_name, default={}) %}
+  {%- if val is mapping and val|length > 0 %}
+    {%- set ns.merged = ns.merged | combine(val, recursive=True) %}
+  {%- endif %}
+{%- endfor %}
+{{ ns.merged | to_json }}
+{% endmacro %}
+
+
+
 {% macro loggingswitch(nftableslogging) %}
 {% if nftableslogging %}
       log

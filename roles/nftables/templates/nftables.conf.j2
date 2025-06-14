@@ -62,3 +62,24 @@ add table ip filter
 {% for nat_rule in nftables_nat | default([]) -%}
 {{ functions.create_nat_rule(nat_rule, nftables_global) }}
 {% endfor %}
+
+{{ functions.get_defined_vars('nftables_global') }}
+----
+{#{% set merged_dict = functions.get_deep_merged_var('nftables_global') | from_json %}
+{{ merged_dict }}
+{% for k, v in merged_dict.items() %}
+  key: {{ k }}, value: {{ v }}
+{% endfor %}#}
+
+##
+{{ functions.get_merged_var_map3('nftables_global') | from_json }}
+##
+{% for k, v in (functions.get_merged_var_map3('nftables_global') | from_json).items() %}
+  key: {{ k }}, value: {{ v }}
+{% endfor %}
+
+{% set merged_dict3 = functions.get_merged_var_list3('nftables_global2') | from_json %}
+{{ merged_dict3 }}
+{% for item in merged_dict3 %}
+item {{ item }}
+{% endfor %}

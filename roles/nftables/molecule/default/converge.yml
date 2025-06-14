@@ -3,16 +3,50 @@
   hosts: all
   become: true
   vars:
-    nftables_global:
-      default_policy:
-        input: accept
-        forward: drop
-        output: accept
-      logging:
-        enabled: true
-        level: info
-      rate_limit: 1000
-      counter: true
+    nftables_globala:
+      chains:
+        input:
+          default_policy: accept
+    nftables_global_0:
+      chains:
+        input:
+          default_policy: reject
+      test: 0
+      list:
+        - item1: aa
+          bb: bb
+    nftables_global_1:
+      test: 1
+      chains:
+        input:
+          default_policy: drop
+    nftables_global_9:
+      chains:
+        forward:
+          default_policy: accept
+      test: 9
+      ttt: 2
+      tes2: bbb
+      list:
+        - item1: aa
+          aa: aa
+    nftables_global2:
+      - tesaa: 1
+    #  default_policy:
+    #    input: accept
+    #    forward: drop
+    #    output: accept
+    #  logging:
+    #    enabled: true
+    #    level: info
+    #  rate_limit: 1000
+    #  counter: true
+    nftables_global2_0:
+      - test: 0
+    nftables_global2_1:
+      - test: 1
+    nftables_global2_9:
+      - test: 1
     nftables_zones:
       - name: wan
         interfaces:
