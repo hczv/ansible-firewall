@@ -1,5 +1,6 @@
 #jinja2: lstrip_blocks: True
-{% import "functions.nft.j2" as functions with context %}
+{% import "parsers.j2" as parsers with context %}
+{% import "functions.j2" as functions with context %}
 #!/usr/bin/env nft -f
 # Ansible managed
 
@@ -63,7 +64,7 @@ add table ip filter
 {{ functions.create_nat_rule(nat_rule, nftables_global) }}
 {% endfor %}
 
-{{ functions.get_defined_vars('nftables_global') }}
+{{ parsers.get_defined_vars('nftables_global') }}
 ----
 {#{% set merged_dict = functions.get_deep_merged_var('nftables_global') | from_json %}
 {{ merged_dict }}
@@ -72,13 +73,13 @@ add table ip filter
 {% endfor %}#}
 
 ##
-{{ functions.get_merged_var_map3('nftables_global') | from_json }}
+{{ parsers.get_merged_map('nftables_global') | from_json }}
 ##
-{% for k, v in (functions.get_merged_var_map3('nftables_global') | from_json).items() %}
+{% for k, v in (parsers.get_merged_map('nftables_global') | from_json).items() %}
   key: {{ k }}, value: {{ v }}
 {% endfor %}
 
-{% set merged_dict3 = functions.get_merged_var_list3('nftables_global2') | from_json %}
+{% set merged_dict3 = parsers.get_merged_list('nftables_global2') | from_json %}
 {{ merged_dict3 }}
 {% for item in merged_dict3 %}
 item {{ item }}

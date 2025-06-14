@@ -1,0 +1,99 @@
+{#
+  Macro: get_merged_list(base)
+
+  Purpose:
+    Merges multiple list variables with the same base name and numeric suffixes
+    into a single combined list.
+
+  Behavior:
+    - Iterates over variable names like: base, base_0, base_1, ..., base_9
+    - If a variable is defined, iterable (but not a string), and non-empty,
+      its items are appended to the final merged list.
+    - The merge order is base → base_0 → base_1 → ... → base_9
+
+  Example:
+    If called as get_merged_list("mylist"), it will merge:
+      - mylist
+      - mylist_0 to mylist_9
+    Resulting in one flat JSON list.
+#}
+{% macro get_merged_list(base) %}
+{%- set ns = namespace(candidates=[base], merged=[]) %}
+{%- for i in range(10) %}
+  {%- set _ = ns.candidates.append(base ~ '_' ~ i|string) %}
+{%- endfor %}
+{%- for var_name in ns.candidates %}
+  {%- set val = lookup('vars', var_name, default=[]) %}
+  {%- if val is iterable and val is not string and val|length > 0 %}
+    {%- set ns.merged = ns.merged + val %}
+  {%- endif %}
+{%- endfor %}
+{{ ns.merged | to_json }}
+{% endmacro %}
+
+{#
+  Macro: get_merged_map(base)
+
+  Purpose:
+    Deeply merges multiple dictionary (map) variables with the same base name
+    and numeric suffixes into a single combined map, with later variables
+    overriding earlier ones recursively.
+
+  Behavior:
+    - Iterates over variable names: base, base_0, base_1, ..., base_9
+    - If a variable is defined and is a non-empty dictionary,
+      it is merged into the result using Ansible's recursive `combine` filter.
+    - Merge order is base → base_0 → base_1 → ... → base_9
+      (later maps override earlier keys at all levels)
+
+  Example:
+    If called as get_merged_map("nftables_global"), it will merge:
+      - nftables_global
+      - nftables_global_0 to nftables_global_9
+    Produces a deep-merged JSON object.
+
+  Notes:
+    This is useful for merging firewall, configuration, or policy maps
+    that may be split across multiple variable files or roles.
+#}
+{% macro get_merged_map(base) %}
+{%- set ns = namespace(candidates=[base], merged={}) %}
+{%- for i in range(10) %}
+  {%- set _ = ns.candidates.append(base ~ '_' ~ i|string) %}
+{%- endfor %}
+{%- for var_name in ns.candidates %}
+  {%- set val = lookup('vars', var_name, default={}) %}
+  {%- if val is mapping and val|length > 0 %}
+    {%- set ns.merged = ns.merged | combine(val, recursive=True) %}
+  {%- endif %}
+{%- endfor %}
+{{ ns.merged | to_json }}
+{% endmacro %}
+
+{#
+  Macro: get_defined_vars(base)
+
+  Purpose:
+    Return a JSON-encoded list of variable names that are defined and non-empty.
+    Checks:
+      - The base variable name (e.g., "myvar")
+      - Indexed variants "myvar_0" through "myvar_9"
+
+  Output:
+    A JSON array of valid variable names, in increasing priority (base < _0 < _9).
+#}
+{% macro get_defined_vars(base) %}
+{%- set ns = namespace(candidates=[base], defined=[]) %}
+{# Add base_0 to base_9 to the list of candidates #}
+{%- for i in range(10) %}
+  {%- set _ = ns.candidates.append(base ~ '_' ~ i|string) %}
+{%- endfor %}
+{# Check which variables are defined and non-empty #}
+{%- for var_name in ns.candidates %}
+  {%- set val = lookup('vars', var_name, default='') %}
+  {%- if val %}
+    {%- set ns.defined = ns.defined + [var_name] %}
+  {%- endif %}
+{%- endfor %}
+{{ ns.defined | to_json }}
+{% endmacro %}

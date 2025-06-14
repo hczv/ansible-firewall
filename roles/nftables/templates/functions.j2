@@ -1,88 +1,24 @@
-{% macro does_var_exist(var) %}
-{% if vars.get(var, None) is not none and vars[var] != '' %}
-  --
-{% endif %}
-{% endmacro %}
+{#
+  Macro: get_merged_list(base)
 
-{% macro get_defined_vars(base) %}
-  {%- set vars_list = [base, base ~ '_default', base ~ '_global'] %}
+  Purpose:
+    Merges multiple list variables with the same base name and numeric suffixes
+    into a single combined list.
 
-  {# First, check the vars in vars_list #}
-  {% for var_name in vars_list %}
-    {% set val = lookup('vars', var_name, default='') %}
-    {% if val %}
-      {{ var_name }} is defined!
-    {% endif %}
-  {% endfor %}
+  Behavior:
+    - Iterates over variable names like: base, base_0, base_1, ..., base_9
+    - If a variable is defined, iterable (but not a string), and non-empty,
+      its items are appended to the final merged list.
+    - The merge order is base → base_0 → base_1 → ... → base_9
 
-  {# Now, check indexed variables base_0 ... base_9 #}
-  {% for i in range(10) %}
-    {% set var_name = '{}_{}'.format(base, i) %}
-    {% set val = lookup('vars', var_name, default='') %}
-    {% if val %}
-      {{ var_name }} is defined!
-    {% endif %}
-  {% endfor %}
-{% endmacro %}
-
-{% macro get_merged_var_list(base) %}
-  {%- set merged_list = [] %}
-  {%- set merged_dict = {} %}
-  {%- set candidates = [base, base ~ '_default'] %}
-  {%- for i in range(10) %}
-    {%- set candidates = candidates + ['{}_{}'.format(base, i)] %}
-  {%- endfor %}
-
-  {%- for var_name in candidates %}
-    {%- set val = lookup('vars', var_name, default=None) %}
-    {%- if val is not none %}
-      {%- if val is iterable and val is not string %}
-        {# It's iterable, check if list or dict #}
-        {%- if val is mapping %}
-          {# val is a dict, merge it #}
-          {%- for k,v in val.items() %}
-            {%- set _ = merged_dict.update({k:v}) %}
-          {%- endfor %}
-        {%- elif val is sequence %}
-          {# val is a list-like, extend merged_list #}
-          {%- set merged_list = merged_list + val %}
-        {%- endif %}
-      {%- else %}
-        {# scalar value, ignore or handle as needed #}
-      {%- endif %}
-    {%- endif %}
-  {%- endfor %}
-
-  {# Return both merged dict and merged list as a dict #}
-  {{ {'merged_dict': merged_dict, 'merged_list': merged_list} }}
-{% endmacro %}
-
-{% macro append_list(lst, item) %}
-  {{ lst + item }}
-{% endmacro %}
-
-{% macro get_merged_var_list2(base) %}
-{%- set ns = namespace(candidates=[base, base ~ '_default', base ~ '_global'], merged={}) %}
-{# counts 9,8,...,0 #}
-{%- for i in range(9, -1, -1) %}
-  {%- set _ = ns.candidates.append(base ~ '_' ~ i|string) %}
-{%- endfor %}
-{%- for var_name in ns.candidates %}
-  {%- set val = lookup('vars', var_name, default=[]) %}
-  {%- if val is iterable and val is not string and val|length > 0 %}
-    {%- for item in val %}
-      {%- for k, v in item.items() %}
-        {%- set _ = ns.merged.update({k: v}) %}
-      {%- endfor %}
-    {%- endfor %}
-  {%- endif %}
-{%- endfor %}
-{{ ns.merged | to_json }}
-{% endmacro %}
-
-{% macro get_merged_var_list3(base) %}
+  Example:
+    If called as get_merged_list("mylist"), it will merge:
+      - mylist
+      - mylist_0 to mylist_9
+    Resulting in one flat JSON list.
+#}
+{% macro get_merged_list(base) %}
 {%- set ns = namespace(candidates=[base], merged=[]) %}
-{# counts 9,8,...,0 #}
 {%- for i in range(10) %}
   {%- set _ = ns.candidates.append(base ~ '_' ~ i|string) %}
 {%- endfor %}
@@ -95,9 +31,33 @@
 {{ ns.merged | to_json }}
 {% endmacro %}
 
-{% macro get_merged_var_map3(base) %}
+{#
+  Macro: get_merged_map(base)
+
+  Purpose:
+    Deeply merges multiple dictionary (map) variables with the same base name
+    and numeric suffixes into a single combined map, with later variables
+    overriding earlier ones recursively.
+
+  Behavior:
+    - Iterates over variable names: base, base_0, base_1, ..., base_9
+    - If a variable is defined and is a non-empty dictionary,
+      it is merged into the result using Ansible's recursive `combine` filter.
+    - Merge order is base → base_0 → base_1 → ... → base_9
+      (later maps override earlier keys at all levels)
+
+  Example:
+    If called as get_merged_map("nftables_global"), it will merge:
+      - nftables_global
+      - nftables_global_0 to nftables_global_9
+    Produces a deep-merged JSON object.
+
+  Notes:
+    This is useful for merging firewall, configuration, or policy maps
+    that may be split across multiple variable files or roles.
+#}
+{% macro get_merged_map(base) %}
 {%- set ns = namespace(candidates=[base], merged={}) %}
-{# Prioritize more specific overrides (base_9 to base_0) #}
 {%- for i in range(10) %}
   {%- set _ = ns.candidates.append(base ~ '_' ~ i|string) %}
 {%- endfor %}
