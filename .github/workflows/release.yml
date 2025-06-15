@@ -69,13 +69,13 @@ jobs:
           config: ansible_collections/hczv/firewall/cliff.toml
           args: --verbose --unreleased --tag ${{ steps.parse_version.outputs.version }}
         env:
-          OUTPUT: release-notes.md
+          OUTPUT: ansible_collections/hczv/firewall/release-notes.md
 
       - name: Create Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create ${{ steps.parse_version.outputs.version }} -F release-notes.md
+          gh release create ${{ steps.parse_version.outputs.version }} -F ansible_collections/hczv/firewall/release-notes.md
 
 
 #      - name: Set up Python 3.
