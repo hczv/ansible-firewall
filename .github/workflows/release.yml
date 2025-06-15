@@ -27,6 +27,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: ansible_collections/hczv/firewall
+          fetch-depth: 0
 
       - name: Get commit message and parse version
         id: parse_version
@@ -66,16 +67,16 @@ jobs:
         uses: orhun/git-cliff-action@v4
         id: git-cliff_specific_version
         with:
-          config: ansible_collections/hczv/firewall/cliff.toml
+          config: cliff.toml
           args: --verbose --unreleased --tag ${{ steps.parse_version.outputs.version }}
         env:
-          OUTPUT: ansible_collections/hczv/firewall/release-notes.md
+          OUTPUT: release-notes.md
 
       - name: Create Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create ${{ steps.parse_version.outputs.version }} -F ansible_collections/hczv/firewall/release-notes.md
+          gh release create ${{ steps.parse_version.outputs.version }} -F release-notes.md
 
 
 #      - name: Set up Python 3.
