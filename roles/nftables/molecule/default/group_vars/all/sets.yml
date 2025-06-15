@@ -1,3 +1,4 @@
+---
 nftables_sets:
   - name: any
     subnets:
@@ -10,7 +11,6 @@ nftables_sets_1:
   - name: external_system
     subnets:
       - 192.168.7.7
-
 
 nftables_dnsmasq_sets:
   - name: external-hosts-example

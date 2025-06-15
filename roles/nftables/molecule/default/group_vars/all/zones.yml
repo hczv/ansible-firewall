@@ -1,3 +1,4 @@
+---
 nftables_zones:
   - name: wan
     interfaces:

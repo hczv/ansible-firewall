@@ -1,3 +1,4 @@
+---
 nftables_input_rules:
   - name: allow all from lan
     zone: lan

@@ -1,3 +1,4 @@
+---
 nftables_forward_rules:
   - name: forward rule
     action: accept
