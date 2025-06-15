@@ -1,0 +1,89 @@
+name: Release-pr
+
+permissions:
+  pull-requests: write
+  contents: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'New version number (e.g., 1.0.0)'
+        required: true
+        type: string
+
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check version format
+        run: |
+          if [[ ! "${{ github.event.inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "❌ Invalid version format. Use MAJOR.MINOR.PATCH (e.g., 1.2.3)."
+            exit 1
+          fi
+  changelog:
+    name: Generate changelog
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up git config
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a ${{ github.event.inputs.version }} -m "${{ github.event.inputs.version }}"
+
+      - name: Generate a changelog
+        uses: orhun/git-cliff-action@v4
+        id: git-cliff
+        with:
+          config: cliff.toml
+          args: --verbose
+        env:
+          OUTPUT: CHANGELOG.md
+
+      - name: Generate a changelog
+        uses: orhun/git-cliff-action@v4
+        id: git-cliff_specific_version
+        with:
+          config: cliff.toml
+          args: --verbose --latest
+        env:
+          OUTPUT: CHANGELOG_specific_version.md
+
+      - name: Create a new branch and commit changelog
+        run: |
+          BRANCH_NAME=release/${{ github.event.inputs.version }}
+          git checkout -b "$BRANCH_NAME"
+          sed -i -e 's/version: .*/version: ${{ github.event.inputs.version }}/g' galaxy.yml
+          git add galaxy.yml
+          git add CHANGELOG.md
+          git commit -m "[release] - ${{ github.event.inputs.version }}"
+          git push origin "$BRANCH_NAME"
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+
+      - name: Read changelog content
+        id: read_changelog
+        run: |
+          echo "RELEASE_CHANGELOG<<EOF" >> $GITHUB_ENV
+          cat CHANGELOG_specific_version.md >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Create Pull Request with gh cli
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH_NAME: ${{ env.BRANCH_NAME }}
+          RELEASE_CHANGELOG: ${{ env.RELEASE_CHANGELOG }}
+        run: |
+          gh pr create \
+            --title "[release] - ${{ github.event.inputs.version }}" \
+            --body "$RELEASE_CHANGELOG" \
+            --head "$BRANCH_NAME" \
+            --base main \
+            --label release

@@ -2,29 +2,97 @@
 name: Release
 on:
   push:
-    tags:
-      - '*'
+    branches:
+      - 'main'
+
+permissions:
+  pull-requests: write
+  contents: write
 
 defaults:
   run:
     working-directory: ansible_collections/hczv/firewall
 
 jobs:
+  check-commit:
+    name: Check Commit Message
+    runs-on: ubuntu-latest
+    outputs:
+      run_release: ${{ steps.check.outputs.run_release }}
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - name: Check out the codebase
+        uses: actions/checkout@v4
+        with:
+          path: ansible_collections/hczv/firewall
+          fetch-depth: 0
+
+      - name: Check commit message
+        id: check
+        run: |
+          commit_msg=$(git log -1 --pretty=%s)
+          echo "Commit message: $commit_msg"
+          if [[ "$commit_msg" =~ \[release\]\ -\ ([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+            version="${BASH_REMATCH[1]}"
+            echo "Matched version: $version"
+            echo "run_release=true" >> $GITHUB_OUTPUT
+            echo "version=$version" >> $GITHUB_OUTPUT
+          else
+            echo "No valid release tag in commit message."
+            echo "run_release=false" >> $GITHUB_OUTPUT
+          fi
 
   release:
     name: Release
+    needs: check-commit
+    if: needs.check-commit.outputs.run_release == 'true'
     runs-on: ubuntu-latest
     env:
       ANSIBLE_GALAXY_TOKEN: ${{ secrets.ANSIBLE_GALAXY_TOKEN }}
       ANSIBLE_FORCE_COLOR: 1
-
     steps:
-      - name: Check out the codebase.
+      - name: Check out the codebase
         uses: actions/checkout@v4
         with:
           path: ansible_collections/hczv/firewall
+          fetch-depth: 0
 
-      - name: Set up Python 3.
+      - name: Check if tag exists and fail if it does
+        run: |
+          git fetch --tags
+          TAG="${{ needs.check-commit.outputs.version }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists. Failing the workflow."
+            exit 1
+          else
+            echo "Tag $TAG does not exist, will create."
+          fi
+
+      - name: Create and push tag
+        run: |
+          TAG="${{ needs.check-commit.outputs.version }}"
+          echo "Creating and pushing tag $TAG"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "$TAG" -m "$TAG"
+          git push origin "$TAG"
+
+      - name: Generate a changelog
+        run: |
+          mkdir /tmp/git-cliff
+          wget https://github.com/orhun/git-cliff/releases/download/v2.9.1/git-cliff-2.9.1-x86_64-unknown-linux-gnu.tar.gz -P /tmp/git-cliff
+          tar -zxvf /tmp/git-cliff/git-cliff-2.9.1-x86_64-unknown-linux-gnu.tar.gz -C /tmp/git-cliff
+          mv /tmp/git-cliff/git-cliff-2.9.1/git-cliff ./git-cliff
+          rm -rf /tmp/git-cliff
+          ./git-cliff --latest -o release-notes.md
+
+      - name: Create Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create ${{ needs.check-commit.outputs.version }} -F release-notes.md
+
+      - name: Set up Python 3
         uses: actions/setup-python@v2
         with:
           python-version: '3.x'
@@ -32,5 +100,5 @@ jobs:
       - name: Install deps
         run: python3 -m pip install --user -r requirements.txt
 
-      - name: Release to Ansible Galaxy.
-        run: ansible-playbook -i 'localhost,' galaxy-deploy.yml -e "github_tag=${{ github.ref }}"
+      - name: Release to Ansible Galaxy
+        run: ansible-playbook -i 'localhost,' galaxy-deploy.yml -e "github_tag=${{ needs.check-commit.outputs.version }}"
