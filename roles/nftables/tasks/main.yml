@@ -28,7 +28,7 @@
     dest: "{{ nftables_config_path }}"
     mode: "u=rw,g=r,o=r"
     backup: true
-    #validate: "/usr/bin/env nft -cf %s"
+    validate: "/usr/bin/env nft -cf %s"
   notify:
     - Restart nftables service
 
