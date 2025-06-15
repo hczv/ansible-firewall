@@ -81,7 +81,7 @@ jobs:
           ls -alh ../../../
           ls -alh ../../../bin
           ls -alh ../../../../
-          cp ../../../git-cliff-* ./
+          cp ../../../bin/git-cliff ./
           ./git-cliff* --vervose --unreleased --tag ${{ steps.parse_version.outputs.version }}
 
       - name: Create Release
