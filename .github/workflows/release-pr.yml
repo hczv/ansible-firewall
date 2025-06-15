@@ -53,7 +53,7 @@ jobs:
         id: git-cliff_specific_version
         with:
           config: cliff.toml
-          args: --verbose --unreleased --tag ${{ github.event.inputs.version }}
+          args: --verbose --latest
         env:
           OUTPUT: CHANGELOG_specific_version.md
 
