@@ -11,6 +11,10 @@
     - [🔁 NAT Masquerading](#-nat-masquerading)
     - [📦 Define reusable IP sets](#-define-reusable-ip-sets)
     - [📤 Allow Forwarded Traffic](#-allow-forwarded-traffic)
+  - [🔁 Port Forwarding Example](#-port-forwarding-example)
+    - [🎯 DNAT Rule](#-dnat-rule)
+    - [✅ Allow Forwarded DNAT Traffic](#-allow-forwarded-dnat-traffic)
+  - [🧪 Full Example Config](#-full-example-config)
   - [🔍 Specification](#-specification)
     - [`nftables_global` (dict)](#nftables_global-dict)
       - [`default_policy` keys:](#default_policy-keys)
@@ -21,10 +25,6 @@
     - [`nftables_forward_rules` and `nftables_input_rules` (list of dicts)](#nftables_forward_rules-and-nftables_input_rules-list-of-dicts)
       - [`sources` / `destinations` entry:](#sources--destinations-entry)
       - [destination\_ports example:](#destination_ports-example)
-  - [🔁 Port Forwarding Example](#-port-forwarding-example)
-    - [🎯 DNAT Rule](#-dnat-rule)
-    - [✅ Allow Forwarded DNAT Traffic](#-allow-forwarded-dnat-traffic)
-  - [🧪 Full Example Config](#-full-example-config)
 
 
 This Ansible role configures a powerful, policy-driven `nftables` firewall **without any wrappers or abstractions** — giving you full control and visibility.
@@ -139,6 +139,120 @@ nftables_forward_rules:
         - 80
         - 443
 ```
+
+
+## 🔁 Port Forwarding Example
+
+### 🎯 DNAT Rule
+
+```yaml
+nftables_nat:
+  - name: "DNAT to internal web server"
+    type: dnat
+    source_zone: wan
+    source_set: any
+    destination_set: wan_ip
+    dnat_zone: lan
+    dnat_set: lan_host
+    ports:
+      tcp:
+        - destination_port: 443
+          to_port: 8443
+```
+
+### ✅ Allow Forwarded DNAT Traffic
+
+```yaml
+nftables_forward_rules:
+  - name: Allow DNAT web server traffic
+    action: accept
+    sources:
+      - zone: wan
+        sets:
+          - any
+    destinations:
+      - zone: lan
+        sets:
+          - lan_host
+    destination_ports:
+      tcp:
+        - 8443
+```
+
+## 🧪 Full Example Config
+
+```yaml
+nftables_global:
+  default_policy:
+    input: accept
+    forward: drop
+    output: accept
+
+nftables_zones:
+  - name: wan
+    interfaces: [eth0]
+  - name: lan
+    interfaces: [eth1, eth2]
+    subnets: [10.0.0.0/24, 10.0.1.0/24]
+    allow_intrazone_traffic: true
+  - name: lab
+    interfaces: [eth3, eth4]
+    subnets: [10.13.33.0/24, 10.14.44.0/24]
+    allow_intrazone_traffic: true
+
+nftables_nat:
+  - name: "snat lan to wan"
+    type: snat
+    source_zone: lan
+    destination_zone: wan
+    masquerade: true
+
+  - name: "DNAT to internal web server"
+    type: dnat
+    source_zone: wan
+    source_set: any
+    destination_set: wan_ip
+    dnat_zone: lan
+    dnat_set: lan_host
+    ports:
+      tcp:
+        - destination_port: 443
+          to_port: 8443
+
+nftables_sets:
+  - name: any
+    subnets: [0.0.0.0/0]
+  - name: wan_ip
+    subnets: [10.11.0.1]
+  - name: lan_host
+    subnets: [10.0.0.2]
+
+nftables_dnsmasq_sets:
+  - name: external-hosts-example
+    hosts:
+      - google.com
+      - yahoo.com
+
+nftables_input_rules:
+  - name: allow ssh from lan
+    zone: lan
+    action: accept
+    sources:
+      subnets: true
+    destination_ports:
+      tcp: [22]
+
+nftables_forward_rules:
+  - name: allow internet from lan
+    action: accept
+    sources:
+      - zone: lan
+        subnets: true
+    destinations:
+      - zone: wan
+        sets: [any]
+```
+
 
 ## 🔍 Specification
 
@@ -267,114 +381,3 @@ destination_ports:
 ```
 
 
-## 🔁 Port Forwarding Example
-
-### 🎯 DNAT Rule
-
-```yaml
-nftables_nat:
-  - name: "DNAT to internal web server"
-    type: dnat
-    source_zone: wan
-    source_set: any
-    destination_set: wan_ip
-    dnat_zone: lan
-    dnat_set: lan_host
-    ports:
-      tcp:
-        - destination_port: 443
-          to_port: 8443
-```
-
-### ✅ Allow Forwarded DNAT Traffic
-
-```yaml
-nftables_forward_rules:
-  - name: Allow DNAT web server traffic
-    action: accept
-    sources:
-      - zone: wan
-        sets:
-          - any
-    destinations:
-      - zone: lan
-        sets:
-          - lan_host
-    destination_ports:
-      tcp:
-        - 8443
-```
-
-## 🧪 Full Example Config
-
-```yaml
-nftables_global:
-  default_policy:
-    input: accept
-    forward: drop
-    output: accept
-
-nftables_zones:
-  - name: wan
-    interfaces: [eth0]
-  - name: lan
-    interfaces: [eth1, eth2]
-    subnets: [10.0.0.0/24, 10.0.1.0/24]
-    allow_intrazone_traffic: true
-  - name: lab
-    interfaces: [eth3, eth4]
-    subnets: [10.13.33.0/24, 10.14.44.0/24]
-    allow_intrazone_traffic: true
-
-nftables_nat:
-  - name: "snat lan to wan"
-    type: snat
-    source_zone: lan
-    destination_zone: wan
-    masquerade: true
-
-  - name: "DNAT to internal web server"
-    type: dnat
-    source_zone: wan
-    source_set: any
-    destination_set: wan_ip
-    dnat_zone: lan
-    dnat_set: lan_host
-    ports:
-      tcp:
-        - destination_port: 443
-          to_port: 8443
-
-nftables_sets:
-  - name: any
-    subnets: [0.0.0.0/0]
-  - name: wan_ip
-    subnets: [10.11.0.1]
-  - name: lan_host
-    subnets: [10.0.0.2]
-
-nftables_dnsmasq_sets:
-  - name: external-hosts-example
-    hosts:
-      - google.com
-      - yahoo.com
-
-nftables_input_rules:
-  - name: allow ssh from lan
-    zone: lan
-    action: accept
-    sources:
-      subnets: true
-    destination_ports:
-      tcp: [22]
-
-nftables_forward_rules:
-  - name: allow internet from lan
-    action: accept
-    sources:
-      - zone: lan
-        subnets: true
-    destinations:
-      - zone: wan
-        sets: [any]
-```
