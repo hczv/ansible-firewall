@@ -1,5 +1,6 @@
 #jinja2: lstrip_blocks: True
-{% import "functions.nft.j2" as functions with context %}
+{% import "parsers.j2" as parsers with context %}
+{% import "functions.j2" as functions with context %}
 #!/usr/bin/env nft -f
 # Ansible managed
 
@@ -22,43 +23,44 @@ add table ip filter
 ####################################
 ############ Add chains ############
 ####################################
-{{ functions.defaultchains(nftables_global) }}
+# Source keys: {{ parsers.get_defined_vars('nftables_global') }}
+{{ functions.defaultchains(parsers.get_merged_map('nftables_global') | from_json) }}
 
 ###################################
 ############ Add zones ############
 ###################################
-{% for zone in nftables_zones | default([]) -%}
+{% for zone in parsers.get_merged_list('nftables_zones') | from_json | default([]) -%}
 {{ functions.create_zone(zone) }}
 {% endfor %}
 
 ###################################
 ############ Add sets ############
 ###################################
-{% for set in nftables_sets | default([]) -%}
+{% for set in parsers.get_merged_list('nftables_sets') | from_json | default([]) -%}
 {{ functions.create_set(set) }}
 {% endfor %}
 
-{% for set in nftables_dnsmasq_sets | default([]) -%}
+{% for set in parsers.get_merged_list('nftables_dnsmasq_sets') | from_json | default([]) -%}
 {{ functions.create_set(set, true) }}
 {% endfor %}
 
 #########################################
 ############ Add input rules ############
 #########################################
-{% for input_rule in nftables_input_rules | default([]) -%}
+{% for input_rule in parsers.get_merged_list('nftables_input_rules') | from_json | default([]) -%}
 {{ functions.create_input_rule(input_rule, nftables_global) }}
 {% endfor %}
 
 ###########################################
 ############ Add forward rules ############
 ###########################################
-{% for forward_rule in nftables_forward_rules | default([]) -%}
+{% for forward_rule in parsers.get_merged_list('nftables_forward_rules') | from_json | default([]) -%}
 {{ functions.create_forward_rule(forward_rule, nftables_global) }}
 {% endfor %}
 
 #######################################
 ############ Add nat rules ############
 #######################################
-{% for nat_rule in nftables_nat | default([]) -%}
+{% for nat_rule in parsers.get_merged_list('nftables_nat') | from_json | default([]) -%}
 {{ functions.create_nat_rule(nat_rule, nftables_global) }}
 {% endfor %}

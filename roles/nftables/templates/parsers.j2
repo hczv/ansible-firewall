@@ -1,0 +1,81 @@
+{#
+  Macro: get_merged_list(base)
+
+  Purpose:
+    Merge a sequence of list-type variables that follow a naming pattern:
+      base, base_0, base_1, ..., base_9
+
+  Behavior:
+    - Uses get_defined_vars(base) to determine which variables are defined and non-empty
+    - Ensures each variable is a valid list (ignores strings and non-iterables)
+    - Concatenates all matching lists into a single list
+
+  Returns:
+    A JSON-encoded merged list
+#}
+{% macro get_merged_list(base) %}
+{%- set var_names = get_defined_vars(base) | from_json %}
+{%- set ns = namespace(merged=[]) %}
+{%- for var_name in var_names %}
+  {%- set val = lookup('vars', var_name, default=[]) %}
+  {%- if val is iterable and val is not string and val|length > 0 %}
+    {%- set ns.merged = ns.merged + val %}
+  {%- endif %}
+{%- endfor %}
+{{ ns.merged | to_json }}
+{% endmacro %}
+
+{#
+  Macro: get_merged_map(base)
+
+  Purpose:
+    Deep-merge a sequence of dictionary/map variables following this naming pattern:
+      base, base_0, base_1, ..., base_9
+
+  Behavior:
+    - Uses get_defined_vars(base) to collect all defined, non-empty map variables
+    - Performs a recursive merge using the Jinja 'combine' filter
+    - Variables defined later in the list override earlier ones (priority increases with suffix)
+
+  Returns:
+    A JSON-encoded merged dictionary/map
+#}
+{% macro get_merged_map(base) %}
+{%- set var_names = get_defined_vars(base) | from_json %}
+{%- set ns = namespace(merged={}) %}
+{%- for var_name in var_names %}
+  {%- set val = lookup('vars', var_name, default={}) %}
+  {%- if val is mapping and val|length > 0 %}
+    {%- set ns.merged = ns.merged | combine(val, recursive=True) %}
+  {%- endif %}
+{%- endfor %}
+{{ ns.merged | to_json }}
+{% endmacro %}
+
+{#
+  Macro: get_defined_vars(base)
+
+  Purpose:
+    Return a JSON-encoded list of variable names that are defined and non-empty.
+    Checks:
+      - The base variable name (e.g., "myvar")
+      - Indexed variants "myvar_0" through "myvar_9"
+
+  Output:
+    A JSON array of valid variable names, in increasing priority (base < _0 < _9).
+#}
+{% macro get_defined_vars(base) %}
+{%- set ns = namespace(candidates=[base], defined=[]) %}
+{# Add base_0 to base_9 to the list of candidates #}
+{%- for i in range(10) %}
+  {%- set _ = ns.candidates.append(base ~ '_' ~ i|string) %}
+{%- endfor %}
+{# Check which variables are defined and non-empty #}
+{%- for var_name in ns.candidates %}
+  {%- set val = lookup('vars', var_name, default='') %}
+  {%- if val %}
+    {%- set ns.defined = ns.defined + [var_name] %}
+  {%- endif %}
+{%- endfor %}
+{{ ns.defined | to_json }}
+{% endmacro %}

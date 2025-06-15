@@ -1,23 +1,63 @@
-# my_role/molecule/default/verify.yml
+# nftables/molecule/default/verify.yml
 ---
 - name: Verify
   hosts: all
   become: true
   vars:
     required_chains: ['input', 'forward', 'output', 'prerouting', 'postrouting']
+    expected_rules:
+      - 'iifname @lan_ifaces ip saddr @lan_subnets counter packets 0 bytes 0 accept comment "allow all from lan"'
+      - 'iifname @wan_ifaces ip saddr @external_system tcp dport 443 counter packets 0 bytes 0 accept comment "Allow https from wan"'
+      - 'iifname @lab_ifaces ip saddr @lab_subnets tcp dport 22 counter packets 0 bytes 0 accept comment "allow ssh from lab"'
+      - 'iifname @lab_ifaces ip saddr @lab_subnets tcp dport 53 counter packets 0 bytes 0 accept comment "allow dns from lab"'
+      - 'iifname @lab_ifaces ip saddr @lab_subnets udp dport 53 counter packets 0 bytes 0 accept comment "allow dns from lab"'
+      - 'counter packets 0 bytes 0 reject comment "default deny"'
+      - 'iifname @lan_ifaces oifname @lan_ifaces accept'
+      - 'iifname @lab_ifaces oifname @lab_ifaces accept'
+      - 'iifname @lan_ifaces oifname @wan_ifaces ip saddr @external-hosts-example ip daddr @wan_ip tcp dport 22 counter packets 0 bytes 0 accept comment "forward rule"'
+      - 'iifname @lan_ifaces oifname @wan_ifaces ip saddr @wan_ip ip daddr @wan_ip tcp dport 22 counter packets 0 bytes 0 accept comment "forward rule"'
+      - 'iifname @lan_ifaces oifname @wan_ifaces ip saddr @lan_subnets ip daddr @wan_ip tcp dport 22 counter packets 0 bytes 0 accept comment "forward rule"'
+      - 'iifname @lan_ifaces oifname @wan_ifaces ip saddr @external-hosts-example ip daddr @external-hosts-example tcp dport 22 counter packets 0 bytes 0 accept comment "forward rule"'
+      - 'iifname @lan_ifaces oifname @wan_ifaces ip saddr @wan_ip ip daddr @external-hosts-example tcp dport 22 counter packets 0 bytes 0 accept comment "forward rule"'
+      - 'iifname @lan_ifaces oifname @wan_ifaces ip saddr @lan_subnets ip daddr @external-hosts-example tcp dport 22 counter packets 0 bytes 0 accept comment "forward rule"'
+      - 'iifname @lan_ifaces oifname @lab_ifaces ip saddr @external-hosts-example ip daddr @lab_subnets tcp dport 22 counter packets 0 bytes 0 accept comment "forward rule"'
+      - 'iifname @lan_ifaces oifname @lab_ifaces ip saddr @wan_ip ip daddr @lab_subnets tcp dport 22 counter packets 0 bytes 0 accept comment "forward rule"'
+      - 'iifname @lan_ifaces oifname @lab_ifaces ip saddr @lan_subnets ip daddr @lab_subnets tcp dport 22 counter packets 0 bytes 0 accept comment "forward rule"'
+      - 'iifname @lan_ifaces oifname @wan_ifaces ip saddr @external-hosts-example ip daddr @wan_ip counter packets 0 bytes 0 accept comment "forward rule without destination ports"'
+      - 'iifname @lan_ifaces oifname @wan_ifaces ip saddr @wan_ip ip daddr @wan_ip counter packets 0 bytes 0 accept comment "forward rule without destination ports"'
+      - 'iifname @lan_ifaces oifname @wan_ifaces ip saddr @lan_subnets ip daddr @wan_ip counter packets 0 bytes 0 accept comment "forward rule without destination ports"'
+      - 'iifname @lan_ifaces oifname @wan_ifaces ip saddr @external-hosts-example ip daddr @external-hosts-example counter packets 0 bytes 0 accept comment "forward rule without destination ports"'
+      - 'iifname @lan_ifaces oifname @wan_ifaces ip saddr @wan_ip ip daddr @external-hosts-example counter packets 0 bytes 0 accept comment "forward rule without destination ports"'
+      - 'iifname @lan_ifaces oifname @wan_ifaces ip saddr @lan_subnets ip daddr @external-hosts-example counter packets 0 bytes 0 accept comment "forward rule without destination ports"'
+      - 'iifname @lan_ifaces oifname @lab_ifaces ip saddr @external-hosts-example ip daddr @lab_subnets counter packets 0 bytes 0 accept comment "forward rule without destination ports"'
+      - 'iifname @lan_ifaces oifname @lab_ifaces ip saddr @wan_ip ip daddr @lab_subnets counter packets 0 bytes 0 accept comment "forward rule without destination ports"'
+      - 'iifname @lan_ifaces oifname @lab_ifaces ip saddr @lan_subnets ip daddr @lab_subnets counter packets 0 bytes 0 accept comment "forward rule without destination ports"'
+
   tasks:
     - name: Get nftables ruleset
       ansible.builtin.command: nft list ruleset
       register: nft_ruleset
 
-    - name: Check missing chains using substring matching
+    - name: Extract declared chains from ruleset
+      set_fact:
+        found_chains: >-
+          {{
+            nft_ruleset.stdout | regex_findall('chain (\w+) \{') | unique
+          }}
+
+    - name: Check missing chains
       set_fact:
         missing_chains: >-
           {{
-            required_chains | reject('in', nft_ruleset.stdout) | list
+            required_chains | difference(found_chains)
           }}
 
     - name: Fail if any required chain is missing
       ansible.builtin.fail:
         msg: "Missing required chains: {{ missing_chains }}"
       when: missing_chains | length > 0
+
+    - name: Assert all expected rules are present
+      ansible.builtin.assert:
+        that: "{{ expected_rules | map('regex_replace', '^(.*)$', \"'\\1' in nft_ruleset.stdout\") | list }}"
+        fail_msg: "One or more expected rules are missing from the nftables ruleset."

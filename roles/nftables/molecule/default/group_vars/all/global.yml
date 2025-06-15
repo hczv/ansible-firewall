@@ -1,0 +1,19 @@
+---
+nftables_global:
+  default_policy:
+    input: accept
+    forward: accept
+    output: accept
+  logging:
+    enabled: true
+    level: info
+  rate_limit: 1000
+  counter: true
+
+nftables_global_1:
+  default_policy:
+    forward: drop
+
+nftables_global_2:
+  default_policy:
+    output: drop

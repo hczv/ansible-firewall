@@ -1,0 +1,41 @@
+---
+nftables_input_rules:
+  - name: allow all from lan
+    zone: lan
+    action: accept
+    sources:
+      subnets: true
+
+  - name: Allow https from wan
+    zone: wan
+    action: accept
+    sources:
+      sets:
+        - external_system
+    destination_ports:
+      tcp:
+        - 443
+
+nftables_input_rules_1:
+  - name: allow ssh from lab
+    zone: lab
+    action: accept
+    sources:
+      subnets: true
+    destination_ports:
+      tcp:
+        - 22
+  - name: allow dns from lab
+    zone: lab
+    action: accept
+    sources:
+      subnets: true
+    destination_ports:
+      tcp:
+        - 53
+      udp:
+        - 53
+
+nftables_input_rules_9:
+  - name: default deny
+    action: reject
