@@ -1,3 +1,16 @@
+# 🔥 nftables Ansible Role
+
+This Ansible role configures a powerful, policy-driven `nftables` firewall **without any wrappers or abstractions** — giving you full control and visibility.
+
+Supports use cases like:
+
+- 🏠 Home or Lab Routers  
+- 🛡️ Host-level Firewalls  
+- 🧩 Complex multi-zone setups  
+
+---
+
+Table of Contents:
 - [🔥 nftables Ansible Role](#-nftables-ansible-role)
   - [🚀 Quick Start](#-quick-start)
     - [🔧 Install the role](#-install-the-role)
@@ -29,17 +42,6 @@
     - [🧩 Use Case](#-use-case)
     - [🛑 Use Case: Default Deny at the End](#-use-case-default-deny-at-the-end)
 
-# 🔥 nftables Ansible Role
-
-This Ansible role configures a powerful, policy-driven `nftables` firewall **without any wrappers or abstractions** — giving you full control and visibility.
-
-Supports use cases like:
-
-- 🏠 Home or Lab Routers  
-- 🛡️ Host-level Firewalls  
-- 🧩 Complex multi-zone setups  
-
----
 
 ## 🚀 Quick Start
 
