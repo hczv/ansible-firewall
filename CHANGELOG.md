@@ -11,6 +11,7 @@
 
 ### 📚 Documentation
 
+- updated collection README.md and nftables README.md  - ([8b1e775](https://github.com/hczv/ansible-firewall/commit/8b1e775aad58a1b5d66a2c8513e3942923e8f44a)) - hczv
 - updated nftables README.md  - ([6e0de36](https://github.com/hczv/ansible-firewall/commit/6e0de36c7e9dfe9825805184d227f2a81432addc)) - hczv
 - Added changelog logic  - ([ed6617b](https://github.com/hczv/ansible-firewall/commit/ed6617b4254a9642af6a3bdae08bd3f349349639)) - hczv
 
