@@ -37,7 +37,8 @@
                 "wholroyd.jinja",
                 "github.vscode-github-actions",
                 "tamasfe.even-better-toml",
-                "bierner.markdown-mermaid"
+                "bierner.markdown-mermaid",
+                "yzhang.markdown-all-in-one"
             ]
         }
     }

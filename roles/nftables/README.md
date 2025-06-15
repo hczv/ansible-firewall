@@ -1,5 +1,32 @@
 # 🔥 nftables Ansible Role
 
+
+- [🔥 nftables Ansible Role](#-nftables-ansible-role)
+  - [🚀 Quick Start](#-quick-start)
+    - [🔧 Install the role](#-install-the-role)
+    - [🧩 Assign the role to hosts](#-assign-the-role-to-hosts)
+    - [🌐 Define global firewall behavior](#-define-global-firewall-behavior)
+  - [🏡 Home Firewall Example](#-home-firewall-example)
+    - [🔲 Define network zones](#-define-network-zones)
+    - [🔁 NAT Masquerading](#-nat-masquerading)
+    - [📦 Define reusable IP sets](#-define-reusable-ip-sets)
+    - [📤 Allow Forwarded Traffic](#-allow-forwarded-traffic)
+  - [🔍 Specification](#-specification)
+    - [`nftables_global` (dict)](#nftables_global-dict)
+      - [`default_policy` keys:](#default_policy-keys)
+    - [`nftables_zones` (list of dicts)](#nftables_zones-list-of-dicts)
+    - [`nftables_nat` (list of dicts)](#nftables_nat-list-of-dicts)
+    - [`nftables_sets` (list of dicts)](#nftables_sets-list-of-dicts)
+    - [`nftables_dnsmasq_sets` (list of dicts)](#nftables_dnsmasq_sets-list-of-dicts)
+    - [`nftables_forward_rules` and `nftables_input_rules` (list of dicts)](#nftables_forward_rules-and-nftables_input_rules-list-of-dicts)
+      - [`sources` / `destinations` entry:](#sources--destinations-entry)
+      - [destination\_ports example:](#destination_ports-example)
+  - [🔁 Port Forwarding Example](#-port-forwarding-example)
+    - [🎯 DNAT Rule](#-dnat-rule)
+    - [✅ Allow Forwarded DNAT Traffic](#-allow-forwarded-dnat-traffic)
+  - [🧪 Full Example Config](#-full-example-config)
+
+
 This Ansible role configures a powerful, policy-driven `nftables` firewall **without any wrappers or abstractions** — giving you full control and visibility.
 
 Supports use cases like:
