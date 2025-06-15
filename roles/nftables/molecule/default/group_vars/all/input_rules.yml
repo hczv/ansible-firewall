@@ -3,8 +3,6 @@ nftables_input_rules:
     zone: lan
     action: accept
     sources:
-      sets:
-        - wan_ip
       subnets: true
 
   - name: Allow https from wan
