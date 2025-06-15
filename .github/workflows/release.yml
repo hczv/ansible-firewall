@@ -14,39 +14,51 @@ defaults:
     working-directory: ansible_collections/hczv/firewall
 
 jobs:
-
-  release:
-    name: Release
+  check-commit:
+    name: Check Commit Message
     runs-on: ubuntu-latest
-    env:
-      ANSIBLE_GALAXY_TOKEN: ${{ secrets.ANSIBLE_GALAXY_TOKEN }}
-      ANSIBLE_FORCE_COLOR: 1
-
+    outputs:
+      run_release: ${{ steps.check.outputs.run_release }}
+      version: ${{ steps.check.outputs.version }}
     steps:
-      - name: Check out the codebase.
+      - name: Check out the codebase
         uses: actions/checkout@v4
         with:
-          path: ansible_collections/hczv/firewall
           fetch-depth: 0
 
-      - name: Get commit message and parse version
-        id: parse_version
+      - name: Check commit message
+        id: check
         run: |
           commit_msg=$(git log -1 --pretty=%B)
           echo "Commit message: $commit_msg"
           if [[ "$commit_msg" =~ \[release\]\ -\ ([0-9]+\.[0-9]+\.[0-9]+) ]]; then
             version="${BASH_REMATCH[1]}"
+            echo "Matched version: $version"
+            echo "run_release=true" >> $GITHUB_OUTPUT
             echo "version=$version" >> $GITHUB_OUTPUT
           else
-            echo "No release version found in commit message. Exiting."
-            exit 1
-          fi
+            echo "No valid release tag in commit message."
+            echo "run_release=false" >> $GITHUB_OUTPUT
+
+  release:
+    name: Release
+    needs: check-commit
+    if: needs.check-commit.outputs.run_release == 'true'
+    runs-on: ubuntu-latest
+    env:
+      ANSIBLE_GALAXY_TOKEN: ${{ secrets.ANSIBLE_GALAXY_TOKEN }}
+      ANSIBLE_FORCE_COLOR: 1
+    steps:
+      - name: Check out the codebase
+        uses: actions/checkout@v4
+        with:
+          path: ansible_collections/hczv/firewall
+          fetch-depth: 0
 
       - name: Check if tag exists and fail if it does
-        id: check_tag
         run: |
           git fetch --tags
-          TAG="${{ steps.parse_version.outputs.version }}"
+          TAG="${{ needs.check-commit.outputs.version }}"
           if git rev-parse "$TAG" >/dev/null 2>&1; then
             echo "Tag $TAG already exists. Failing the workflow."
             exit 1
@@ -56,7 +68,7 @@ jobs:
 
       - name: Create and push tag
         run: |
-          TAG="${{ steps.parse_version.outputs.version }}"
+          TAG="${{ needs.check-commit.outputs.version }}"
           echo "Creating and pushing tag $TAG"
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -64,40 +76,23 @@ jobs:
           git push origin "$TAG"
 
       - name: Generate a changelog
-        uses: orhun/git-cliff-action@v4
-        id: git-cliff_specific_version
-        with:
-          config: ansible_collections/hczv/firewall/cliff.toml
-          args: --verbose --unreleased --tag ${{ steps.parse_version.outputs.version }}
-        env:
-          OUTPUT: release-notes.md
-
-      - name: debug
         run: |
-          pwd
-          ls -alh
-          ls -alh ../
-          ls -alh ../../
-          ls -alh ../../../
-          ls -alh ../../../bin
-          ls -alh ../../../../
           cp ../../../bin/git-cliff ./
-          ./git-cliff* --verbose --unreleased --tag ${{ steps.parse_version.outputs.version }} -o release-notes.md
+          ./git-cliff --verbose --unreleased --tag ${{ needs.check-commit.outputs.version }} -o release-notes.md
 
       - name: Create Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create ${{ steps.parse_version.outputs.version }} -F release-notes.md
+          gh release create ${{ needs.check-commit.outputs.version }} -F release-notes.md
 
+      - name: Set up Python 3
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
 
-#      - name: Set up Python 3.
-#        uses: actions/setup-python@v2
-#        with:
-#          python-version: '3.x'
-#
-#      - name: Install deps
-#        run: python3 -m pip install --user -r requirements.txt
-#
-#      - name: Release to Ansible Galaxy.
-#        run: ansible-playbook -i 'localhost,' galaxy-deploy.yml -e "github_tag=${{ steps.parse_version.outputs.version }}"
+      - name: Install deps
+        run: python3 -m pip install --user -r requirements.txt
+
+      - name: Release to Ansible Galaxy
+        run: ansible-playbook -i 'localhost,' galaxy-deploy.yml -e "github_tag=${{ needs.check-commit.outputs.version }}"
