@@ -62,13 +62,29 @@ jobs:
           git tag "$TAG" -m "$TAG"
           git push origin "$TAG"
 
-      - name: Set up Python 3.
-        uses: actions/setup-python@v2
+      - name: Generate a changelog
+        uses: orhun/git-cliff-action@v4
+        id: git-cliff_specific_version
         with:
-          python-version: '3.x'
+          config: cliff.toml
+          args: --verbose --unreleased --tag ${{ steps.parse_version.outputs.version }}
+        env:
+          OUTPUT: release-notes.md
 
-      - name: Install deps
-        run: python3 -m pip install --user -r requirements.txt
+      - name: Create Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create ${{ steps.parse_version.outputs.version }} -F release-notes.md
 
-      - name: Release to Ansible Galaxy.
-        run: ansible-playbook -i 'localhost,' galaxy-deploy.yml -e "github_tag=${{ steps.parse_version.outputs.version }}"
+
+#      - name: Set up Python 3.
+#        uses: actions/setup-python@v2
+#        with:
+#          python-version: '3.x'
+#
+#      - name: Install deps
+#        run: python3 -m pip install --user -r requirements.txt
+#
+#      - name: Release to Ansible Galaxy.
+#        run: ansible-playbook -i 'localhost,' galaxy-deploy.yml -e "github_tag=${{ steps.parse_version.outputs.version }}"
