@@ -1,10 +1,6 @@
 # git-cliff ~ configuration file
 # https://git-cliff.org/docs/configuration
 
-[remote.github]
-owner = "hczv"
-repo = "ansible-firewall"
-
 [changelog]
 # changelog header
 header = """
@@ -16,66 +12,34 @@ All notable changes to this project will be documented in this file.
 """
 # A Tera template to be rendered for each release in the changelog.
 # See https://keats.github.io/tera/docs/#introduction
-body2 = """
+body = """
+---
 {% if version %}\
-    ## [{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+    {% if previous.version %}\
+        ## [{{ version | trim_start_matches(pat="v") }}](https://github.com/hczv/ansible-firewall/compare/{{ previous.version }}..{{ version }}) - {{ timestamp | date(format="%Y-%m-%d") }}
+    {% else %}\
+        ## {{ version | trim_start_matches(pat="v") }} - {{ timestamp | date(format="%Y-%m-%d") }}
+    {% endif %}\
 {% else %}\
     ## [unreleased]
 {% endif %}\
 {% for group, commits in commits | group_by(attribute="group") %}
-    ### {{ group | striptags | trim | upper_first }}
-    {% for commit in commits %}
-        - {% if commit.scope %}*({{ commit.scope }})* {% endif %}\
-            {% if commit.breaking %}[**breaking**] {% endif %}\
-            {{ commit.message | upper_first }}\
-    {% endfor %}
-{% endfor %}\n
-"""
-
-body = """
-{%- if not version %}
-## [unreleased]
-{% else -%}
-## ansible-firewall - [{{ version }}](a) - {{ timestamp | date(format="%Y-%m-%d") }}
-{% endif -%}
-
-{% macro commit(commit) -%}
-- [{{ commit.id | truncate(length=7, end="") }}]({{ "https://github.com/hczv/firewall/commit/" ~ commit.id }}) \
-  *({{commit.scope | default(value = "uncategorized") | lower }})* {{ commit.message | upper_first | trim }}\
-  {% if commit.remote.username %} by @{{ commit.remote.username }}{%- endif -%}\
-  {% if commit.remote.pr_number %} in [#{{ commit.remote.pr_number }}]({{ self::remote_url() }}/pull/{{ commit.remote.pr_number }}){%- endif %}\
-{%- if commit.breaking %} [**breaking**]{% endif %}
-{%- if commit.body %}\n\n{{ commit.body | indent(prefix="  > ", first=true, blank=true) }}
-{%- endif %}
-{%- for footer in commit.footers %}\n
-{%- if footer.token != "Signed-off-by" and footer.token != "Co-authored-by" %}
-  >
-{{ footer.token | indent(prefix="  > ", first=true, blank=true) }}
-{{- footer.separator }}
-{{- footer.value| indent(prefix="  > ", first=false, blank=true)  }}
-{%- endif %}
-{%- endfor %}
-{% endmacro -%}
-
-{% for group, commits in commits | group_by(attribute="group") %}
 ### {{ group | striptags | trim | upper_first }}
-{% for commit in commits | filter(attribute="scope") | sort(attribute="scope") %}
-{{ self::commit(commit=commit) }}
-{%- endfor -%}
-{% for commit in commits %}
-{%- if not commit.scope %}
-{{ self::commit(commit=commit) }}
-{%- endif -%}
-{%- endfor -%}
-{%- endfor %}
-
-{% if version %}
-{% if previous.version %}
-**Full Changelog**: {{ release_link }}
-{% endif %}
-{% else -%}
-  {% raw %}\n{% endraw %}
-{% endif %}
+    {% for commit in commits
+    | filter(attribute="scope")
+    | sort(attribute="scope") %}
+        - **({{commit.scope}})**{% if commit.breaking %} [**breaking**]{% endif %} \
+            {{ commit.message }} - ([{{ commit.id | truncate(length=7, end="") }}](https://github.com/hczv/ansible-firewall/commit/{{ commit.id }})) - {{ commit.author.name }}
+    {%- endfor -%}
+    {% raw %}\n{% endraw %}\
+    {%- for commit in commits %}
+        {%- if commit.scope -%}
+        {% else -%}
+            - {% if commit.breaking %} [**breaking**]{% endif %}\
+                {{ commit.message }} - ([{{ commit.id | truncate(length=7, end="") }}](https://github.com/hczv/ansible-firewall/commit/{{ commit.id }})) - {{ commit.author.name }}
+        {% endif -%}
+    {% endfor -%}
+{% endfor %}\n
 
 {%- macro remote_url() -%}
 https://github.com/{{ remote.owner }}/{{ remote.repo }}\

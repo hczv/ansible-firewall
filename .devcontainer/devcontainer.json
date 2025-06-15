@@ -36,7 +36,8 @@
                 "github.copilot",
                 "wholroyd.jinja",
                 "github.vscode-github-actions",
-                "tamasfe.even-better-toml"
+                "tamasfe.even-better-toml",
+                "bierner.markdown-mermaid"
             ]
         }
     }
