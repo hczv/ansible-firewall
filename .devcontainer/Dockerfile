@@ -29,6 +29,13 @@ RUN wget https://github.com/junegunn/fzf/releases/download/v0.54.0/fzf-0.54.0-li
     tar -zxvf /tmp/fzf-0.54.0-linux_amd64.tar.gz -C /usr/local/bin && \
     rm -f /tmp/fzf-0.54.0-linux_amd64.tar.gz
 
+# Install git-cliff
+RUN mkdir /tmp/git-cliff && \
+    wget https://github.com/orhun/git-cliff/releases/download/v2.9.1/git-cliff-2.9.1-x86_64-unknown-linux-gnu.tar.gz -P /tmp/git-cliff && \
+    tar -zxvf /tmp/git-cliff/git-cliff-2.9.1-x86_64-unknown-linux-gnu.tar.gz -C /tmp/git-cliff && \
+    mv /tmp/git-cliff/git-cliff-2.9.1/git-cliff /usr/local/bin/git-cliff && \
+    rm -rf /tmp/git-cliff
+
 # Install docker-ce cli
 RUN dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo && \
     dnf install -y docker-ce-cli && \

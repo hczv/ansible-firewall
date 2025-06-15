@@ -2,8 +2,12 @@
 name: Release
 on:
   push:
-    tags:
-      - '*'
+    branches:
+      - 'main'
+
+permissions:
+  pull-requests: write
+  contents: write
 
 defaults:
   run:
@@ -24,6 +28,40 @@ jobs:
         with:
           path: ansible_collections/hczv/firewall
 
+      - name: Get commit message and parse version
+        id: parse_version
+        run: |
+          commit_msg=$(git log -1 --pretty=%B)
+          echo "Commit message: $commit_msg"
+          if [[ "$commit_msg" =~ \[release\]\ -\ ([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+            version="${BASH_REMATCH[1]}"
+            echo "version=$version" >> $GITHUB_OUTPUT
+          else
+            echo "No release version found in commit message. Exiting."
+            exit 1
+          fi
+
+      - name: Check if tag exists and fail if it does
+        id: check_tag
+        run: |
+          git fetch --tags
+          TAG="${{ steps.parse_version.outputs.version }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists. Failing the workflow."
+            exit 1
+          else
+            echo "Tag $TAG does not exist, will create."
+          fi
+
+      - name: Create and push tag
+        run: |
+          TAG="${{ steps.parse_version.outputs.version }}"
+          echo "Creating and pushing tag $TAG"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "$TAG" -m "$TAG"
+          git push origin "$TAG"
+
       - name: Set up Python 3.
         uses: actions/setup-python@v2
         with:
@@ -33,4 +71,4 @@ jobs:
         run: python3 -m pip install --user -r requirements.txt
 
       - name: Release to Ansible Galaxy.
-        run: ansible-playbook -i 'localhost,' galaxy-deploy.yml -e "github_tag=${{ github.ref }}"
+        run: ansible-playbook -i 'localhost,' galaxy-deploy.yml -e "github_tag=${{ steps.parse_version.outputs.version }}"
