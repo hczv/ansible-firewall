@@ -79,6 +79,7 @@ jobs:
           ls -alh ../
           ls -alh ../../
           ls -alh ../../../
+          ls -alh ../../../git-cliff-2.7.0
           ls -alh ../../../../
           cp ../../../git-cliff-* ./
           ./git-cliff* --vervose --unreleased --tag ${{ steps.parse_version.outputs.version }}
