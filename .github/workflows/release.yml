@@ -40,6 +40,7 @@ jobs:
           else
             echo "No valid release tag in commit message."
             echo "run_release=false" >> $GITHUB_OUTPUT
+          fi
 
   release:
     name: Release
