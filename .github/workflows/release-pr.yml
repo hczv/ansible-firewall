@@ -55,16 +55,15 @@ jobs:
           git push origin "$BRANCH_NAME"
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
 
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v5
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          title: "chore: update changelog"
-          body: |
-            This PR updates the changelog with the latest changes using git‑cliff.
-          branch: ${{ env.BRANCH_NAME }}
-          base: main
-          draft: false
+      - name: Create Pull Request with gh cli
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --title "chore: update changelog" \
+            --body "Automated changelog update via git-cliff." \
+            --head "$BRANCH_NAME" \
+            --base main
 #  # Create a PR with the new versions and changelog, preparing the next release.
 #  release-plz-pr:
 #    name: Release-plz PR
