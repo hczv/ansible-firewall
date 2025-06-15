@@ -24,6 +24,7 @@ jobs:
       - name: Check out the codebase
         uses: actions/checkout@v4
         with:
+          path: ansible_collections/hczv/firewall
           fetch-depth: 0
 
       - name: Check commit message
