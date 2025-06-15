@@ -30,6 +30,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up git config
         run: |
@@ -45,6 +47,15 @@ jobs:
           args: --verbose
         env:
           OUTPUT: CHANGELOG.md
+
+      - name: Generate a changelog
+        uses: orhun/git-cliff-action@v4
+        id: git-cliff_specific_version
+        with:
+          config: cliff.toml
+          args: --verbose --tag ${{ github.event.inputs.version }}
+        env:
+          OUTPUT: CHANGELOG_specific_version.md
 
       - name: Create a new branch and commit changelog
         run: |
@@ -64,6 +75,13 @@ jobs:
           RELEASE_CHANGELOG=$(git cliff --tag "${{ github.event.inputs.version }}")
           echo "RELEASE_CHANGELOG<<EOF" >> $GITHUB_ENV
           echo "$RELEASE_CHANGELOG" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Read changelog content
+        id: read_changelog
+        run: |
+          echo "RELEASE_CHANGELOG<<EOF" >> $GITHUB_ENV
+          cat CHANGELOG_specific_version.md >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
       - name: Create Pull Request with gh cli
