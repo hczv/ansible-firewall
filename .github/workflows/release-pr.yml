@@ -49,7 +49,6 @@ jobs:
         run: |
           BRANCH_NAME=chore/update-changelog-$(date +%s)
           git checkout -b "$BRANCH_NAME"
-          echo "${{ steps.git-cliff.outputs.changelog }}" > CHANGELOG.md
           git add CHANGELOG.md
           git commit -m "chore: update changelog [skip ci]"
           git push origin "$BRANCH_NAME"
