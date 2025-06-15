@@ -64,7 +64,7 @@ jobs:
           sed -i -e 's/version: .*/version: ${{ github.event.inputs.version }}/g' galaxy.yml
           git add galaxy.yml
           git add CHANGELOG.md
-          git commit -m "release: update changelog [skip ci]"
+          git commit -m "[release] - ${{ github.event.inputs.version }}"
           git push origin "$BRANCH_NAME"
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
 
@@ -85,4 +85,5 @@ jobs:
             --title "[release] - ${{ github.event.inputs.version }}" \
             --body "$RELEASE_CHANGELOG" \
             --head "$BRANCH_NAME" \
-            --base main
+            --base main \
+            --label release
