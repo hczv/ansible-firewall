@@ -17,4 +17,3 @@ rules:
 
 ignore: |
   .github/stale.yml
-  .chglog/config.yml
