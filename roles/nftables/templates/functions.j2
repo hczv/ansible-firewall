@@ -63,47 +63,116 @@ add element ip filter {{ set.name }} { {{ set.subnets | join(', ') }} }
 
 {% macro create_input_rule(input_rule, nftables_global) -%}
 # {{ input_rule.name }}
+{% set variants = [] %}
+{% if input_rule.sources is not defined or
+      (input_rule.sources.subnets is not defined and input_rule.sources.sets is not defined) or
+      (input_rule.sources.subnets | default([]) == [] and input_rule.sources.sets | default([]) == []) %}
+    {% set _ = variants.append({
+        'src_zone': input_rule.zone | default(none),
+        'dst_zone': none,
+        'src_set': none,
+        'src_subnet': none,
+        'dst_set': none,
+        'dst_subnet': none
+    }) %}
+{% endif %}
 {% if input_rule.sources.subnets is defined and input_rule.sources.subnets %}
-{{ create_generic_rule(input_rule, 'input', input_rule.zone, none, none, true, none, none) }}
-{%- endif %}
+    {% set _ = variants.append({
+        'src_zone': input_rule.zone,
+        'dst_zone': none,
+        'src_set': none,
+        'src_subnet': true,
+        'dst_set': none,
+        'dst_subnet': none
+    }) %}
+{% endif %}
 {% if input_rule.sources.sets is defined and input_rule.sources.sets %}
     {% for src_set in input_rule.sources.sets %}
-{{ create_generic_rule(input_rule, 'input', input_rule.zone, none, src_set, none, none, none) }}
+        {% set _ = variants.append({
+            'src_zone': input_rule.zone,
+            'dst_zone': none,
+            'src_set': src_set,
+            'src_subnet': none,
+            'dst_set': none,
+            'dst_subnet': none
+        }) %}
     {% endfor %}
 {% endif %}
-{% endmacro %}
+{{ create_generic_rules(input_rule, 'input', variants) }}
+{%- endmacro %}
+
 
 {% macro create_forward_rule(forward_rule, nftables_global) %}
 # {{ forward_rule.name }}
-{% for source in forward_rule.sources -%}
-  {% for src_set in source.sets | default([]) -%}
-    {% for destination in forward_rule.destinations -%}
-      {% for dst_set in destination.sets | default([]) -%}
-{{ create_generic_rule(forward_rule, 'forward', source.zone, destination.zone, src_set, none, dst_set, none) }}
-      {%- endfor %}
-      {%- if destination.subnets is defined and destination.subnets %}
-{{ create_generic_rule(forward_rule, 'forward', source.zone, destination.zone, src_set, none, none, true) }}
-      {%- endif %}
-    {%- endfor %}
-  {%- endfor %}
-  {%- if source.subnets is defined and source.subnets %}
-    {% for destination in forward_rule.destinations -%}
-      {% for dst_set in destination.sets | default([]) -%}
-{{ create_generic_rule(forward_rule, 'forward', source.zone, destination.zone, none, true, dst_set, none) }}
-      {%- endfor %}
-      {%- if destination.subnets is defined and destination.subnets -%}
-{{ create_generic_rule(forward_rule, 'forward', source.zone, destination.zone, none, true, none, true) }}
-      {%- endif %}
-    {%- endfor %}
-  {%- endif %}
-{%- endfor %}
+{% set variants = [] %}
+{% for source in forward_rule.sources %}
+  {% for destination in forward_rule.destinations %}
+    {# src_set + dst_set #}
+    {% for src_set in source.sets | default([]) %}
+      {% for dst_set in destination.sets | default([]) %}
+        {% set _ = variants.append({
+          'src_zone': source.zone,
+          'dst_zone': destination.zone,
+          'src_set': src_set,
+          'src_subnet': none,
+          'dst_set': dst_set,
+          'dst_subnet': none
+        }) %}
+      {% endfor %}
+      {% if destination.subnets is defined and destination.subnets %}
+        {% set _ = variants.append({
+          'src_zone': source.zone,
+          'dst_zone': destination.zone,
+          'src_set': src_set,
+          'src_subnet': none,
+          'dst_set': none,
+          'dst_subnet': true
+        }) %}
+      {% endif %}
+    {% endfor %}
+    {# src_subnet + dst_set #}
+    {% if source.subnets is defined and source.subnets %}
+      {% for dst_set in destination.sets | default([]) %}
+        {% set _ = variants.append({
+          'src_zone': source.zone,
+          'dst_zone': destination.zone,
+          'src_set': none,
+          'src_subnet': true,
+          'dst_set': dst_set,
+          'dst_subnet': none
+        }) %}
+      {% endfor %}
+      {% if destination.subnets is defined and destination.subnets %}
+        {% set _ = variants.append({
+          'src_zone': source.zone,
+          'dst_zone': destination.zone,
+          'src_set': none,
+          'src_subnet': true,
+          'dst_set': none,
+          'dst_subnet': true
+        }) %}
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+{% endfor %}
+{{ create_generic_rules(forward_rule, 'forward', variants) }}
 {% endmacro %}
+
+
+{% macro create_generic_rules(rule, chain, variants) -%}
+    {% for v in variants %}
+{{ create_generic_rule(rule, chain,
+            v.src_zone, v.dst_zone,
+            v.src_set, v.src_subnet,
+            v.dst_set, v.dst_subnet) }}
+    {% endfor %}
+{%- endmacro %}
 
 {% macro create_generic_rule(rule, chain, src_zone, dst_zone, src_set, src_subnet, dst_set, dst_subnet) -%}
 {%- set destination_ports = rule.destination_ports if rule.destination_ports is defined else {} %}
 {%- if destination_ports %}
     {%- for proto, dst_ports in destination_ports.items() %}
-add rule ip filter {{ chain }}
+add rule ip filter {{ chain }} {# #}
 {%- if src_zone %} iifname @{{ src_zone }}_ifaces {% endif -%}
 {%- if dst_zone %} oifname @{{ dst_zone }}_ifaces {% endif -%}
 {%- if src_set %} ip saddr @{{ src_set }} {% endif -%}
@@ -115,7 +184,7 @@ add rule ip filter {{ chain }}
  counter {{ rule.action | default('accept') }} comment "{{ rule.name | default('unspecified', true) }}"
     {% endfor %}
 {% else %}
-add rule ip filter {{ chain }}
+add rule ip filter {{ chain }} {# #}
 {%- if src_zone %} iifname @{{ src_zone }}_ifaces {% endif -%}
 {%- if dst_zone %} oifname @{{ dst_zone }}_ifaces {% endif -%}
 {%- if src_set %} ip saddr @{{ src_set }} {% endif -%}

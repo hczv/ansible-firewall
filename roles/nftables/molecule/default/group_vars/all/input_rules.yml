@@ -35,3 +35,7 @@ nftables_input_rules_1:
         - 53
       udp:
         - 53
+
+nftables_input_rules_9:
+  - name: default deny
+    action: reject
