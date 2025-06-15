@@ -4,16 +4,11 @@ All notable changes to this project will be documented in this file.
 <!-- ignore lint rules that are often triggered by content generated from commits / git-cliff -->
 <!-- markdownlint-disable line-length no-bare-urls ul-style emphasis-style -->
 ---
-## [1.0.5](https://github.com/hczv/ansible-firewall/compare/1.0.4..1.0.5) - 2025-06-15
+## [unreleased]
 
 ### 📚 Documentation
 
 - updated changelog action - ([8dbc3d8](https://github.com/hczv/ansible-firewall/commit/8dbc3d82fedecbc30a962cddbc7e437926264ca7)) - hczv
----
-## [1.0.4](https://github.com/hczv/ansible-firewall/compare/1.0.3..1.0.4) - 2025-06-14
-
-### 📚 Documentation
-
 - Added changelog logic - ([ae33fa5](https://github.com/hczv/ansible-firewall/commit/ae33fa5f3641ec6b5098b8d5ce7844436918247a)) - hczv
 ---
 ## 1.0.0 - 2025-06-05
