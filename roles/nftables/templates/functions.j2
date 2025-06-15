@@ -71,19 +71,15 @@ add element ip filter {{ set.name }} { {{ set.subnets | join(', ') }} }
         'src_zone': input_rule.zone | default(none),
         'dst_zone': none,
         'src_set': none,
-        'src_subnet': none,
         'dst_set': none,
-        'dst_subnet': none
     }) %}
 {% endif %}
 {% if input_rule.sources.subnets is defined and input_rule.sources.subnets %}
     {% set _ = variants.append({
         'src_zone': input_rule.zone,
         'dst_zone': none,
-        'src_set': none,
-        'src_subnet': true,
+        'src_set': input_rule.zone ~ '_subnets',
         'dst_set': none,
-        'dst_subnet': none
     }) %}
 {% endif %}
 {% if input_rule.sources.sets is defined and input_rule.sources.sets %}
@@ -92,9 +88,7 @@ add element ip filter {{ set.name }} { {{ set.subnets | join(', ') }} }
             'src_zone': input_rule.zone,
             'dst_zone': none,
             'src_set': src_set,
-            'src_subnet': none,
             'dst_set': none,
-            'dst_subnet': none
         }) %}
     {% endfor %}
 {% endif %}
@@ -111,8 +105,8 @@ add element ip filter {{ set.name }} { {{ set.subnets | join(', ') }} }
     {% for src_set in source.sets | default([]) %}
       {% for dst_set in destination.sets | default([]) %}
         {% set _ = variants.append({
-          'src_zone': source.zone,
-          'dst_zone': destination.zone,
+          'src_zone': source.zone | default(none),
+          'dst_zone': destination.zone | default(none),
           'src_set': src_set,
           'src_subnet': none,
           'dst_set': dst_set,
@@ -121,12 +115,10 @@ add element ip filter {{ set.name }} { {{ set.subnets | join(', ') }} }
       {% endfor %}
       {% if destination.subnets is defined and destination.subnets %}
         {% set _ = variants.append({
-          'src_zone': source.zone,
-          'dst_zone': destination.zone,
+          'src_zone': source.zone | default(none),
+          'dst_zone': destination.zone | default(none),
           'src_set': src_set,
-          'src_subnet': none,
-          'dst_set': none,
-          'dst_subnet': true
+          'dst_set': destination.zone ~ '_subnets',
         }) %}
       {% endif %}
     {% endfor %}
@@ -134,22 +126,18 @@ add element ip filter {{ set.name }} { {{ set.subnets | join(', ') }} }
     {% if source.subnets is defined and source.subnets %}
       {% for dst_set in destination.sets | default([]) %}
         {% set _ = variants.append({
-          'src_zone': source.zone,
-          'dst_zone': destination.zone,
-          'src_set': none,
-          'src_subnet': true,
+          'src_zone': source.zone | default(none),
+          'dst_zone': destination.zone | default(none),
+          'src_set': source.zone ~ '_subnets',
           'dst_set': dst_set,
-          'dst_subnet': none
         }) %}
       {% endfor %}
       {% if destination.subnets is defined and destination.subnets %}
         {% set _ = variants.append({
-          'src_zone': source.zone,
-          'dst_zone': destination.zone,
-          'src_set': none,
-          'src_subnet': true,
-          'dst_set': none,
-          'dst_subnet': true
+          'src_zone': source.zone | default(none),
+          'dst_zone': destination.zone | default(none),
+          'src_set': source.zone ~ '_subnets',
+          'dst_set': destination.zone ~ '_subnets',
         }) %}
       {% endif %}
     {% endif %}
@@ -163,12 +151,11 @@ add element ip filter {{ set.name }} { {{ set.subnets | join(', ') }} }
     {% for v in variants %}
 {{ create_generic_rule(rule, chain,
             v.src_zone, v.dst_zone,
-            v.src_set, v.src_subnet,
-            v.dst_set, v.dst_subnet) }}
+            v.src_set, v.dst_set,) }}
     {% endfor %}
 {%- endmacro %}
 
-{% macro create_generic_rule(rule, chain, src_zone, dst_zone, src_set, src_subnet, dst_set, dst_subnet) -%}
+{% macro create_generic_rule(rule, chain, src_zone, dst_zone, src_set, dst_set) -%}
 {%- set destination_ports = rule.destination_ports if rule.destination_ports is defined else {} %}
 {%- if destination_ports %}
     {%- for proto, dst_ports in destination_ports.items() %}
@@ -176,22 +163,18 @@ add rule ip filter {{ chain }} {# #}
 {%- if src_zone %} iifname @{{ src_zone }}_ifaces {% endif -%}
 {%- if dst_zone %} oifname @{{ dst_zone }}_ifaces {% endif -%}
 {%- if src_set %} ip saddr @{{ src_set }} {% endif -%}
-{%- if src_subnet %} ip saddr @{{ src_zone }}_subnets {% endif -%}
 {%- if dst_set %} ip daddr @{{ dst_set }} {% endif -%}
-{%- if dst_subnet %} ip daddr @{{ dst_zone }}_subnets {% endif -%}
-{{ proto }} dport
+{{ proto }} dport {# #}
 {%- if dst_ports | length > 1 %} { {{ dst_ports | join(', ') }} }{% else %} {{ dst_ports[0] }}{% endif %}
- counter {{ rule.action | default('accept') }} comment "{{ rule.name | default('unspecified', true) }}"
+counter {{ rule.action | default('accept') }} comment "{{ rule.name | default('unspecified', true) }}"
     {% endfor %}
 {% else %}
 add rule ip filter {{ chain }} {# #}
 {%- if src_zone %} iifname @{{ src_zone }}_ifaces {% endif -%}
 {%- if dst_zone %} oifname @{{ dst_zone }}_ifaces {% endif -%}
 {%- if src_set %} ip saddr @{{ src_set }} {% endif -%}
-{%- if src_subnet %} ip saddr @{{ src_zone }}_subnets {% endif -%}
 {%- if dst_set %} ip daddr @{{ dst_set }} {% endif -%}
-{%- if dst_subnet %} ip daddr @{{ dst_zone }}_subnets {% endif -%}
- counter {{ rule.action | default('accept') }} comment "{{ rule.name | default('unspecified', true) }}"
+counter {{ rule.action | default('accept') }} comment "{{ rule.name | default('unspecified', true) }}"
 {% endif %}
 {% endmacro %}
 
