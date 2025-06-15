@@ -79,7 +79,11 @@ jobs:
 
       - name: Generate a changelog
         run: |
-          cp ../../../bin/git-cliff ./
+          mkdir /tmp/git-cliff
+          wget https://github.com/orhun/git-cliff/releases/download/v2.9.1/git-cliff-2.9.1-x86_64-unknown-linux-gnu.tar.gz -P /tmp/git-cliff
+          tar -zxvf /tmp/git-cliff/git-cliff-2.9.1-x86_64-unknown-linux-gnu.tar.gz -C /tmp/git-cliff
+          mv /tmp/git-cliff/git-cliff-2.9.1/git-cliff ./git-cliff
+          rm -rf /tmp/git-cliff
           ./git-cliff --verbose --unreleased --tag ${{ needs.check-commit.outputs.version }} -o release-notes.md
 
       - name: Create Release
