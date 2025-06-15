@@ -67,7 +67,7 @@ jobs:
         uses: orhun/git-cliff-action@v4
         id: git-cliff_specific_version
         with:
-          config: cliff.toml
+          config: ansible_collections/hczv/firewall/cliff.toml
           args: --verbose --unreleased --tag ${{ steps.parse_version.outputs.version }}
         env:
           OUTPUT: release-notes.md
