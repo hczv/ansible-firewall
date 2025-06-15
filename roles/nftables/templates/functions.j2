@@ -42,7 +42,7 @@ add element ip filter {{ zone.name }}_subnets { {{ zone.subnets | join(', ') }} 
 
 {%- if zone.allow_intrazone_traffic is defined and zone.allow_intrazone_traffic %}
 # Allow intra-zone traffic for {{ zone.name }}
-add rule ip filter forward iifname @{{ zone.name }}_ifaces oifname @{{ zone.name }}_ifaces accept
+add rule ip filter forward iifname @{{ zone.name }}_ifaces oifname @{{ zone.name }}_ifaces accept comment "intrazone traffic {{ zone.name }}"
 {%- endif %}
 {% endmacro %}
 
