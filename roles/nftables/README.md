@@ -1,6 +1,16 @@
 # 🔥 nftables Ansible Role
 
+This Ansible role configures a powerful, policy-driven `nftables` firewall **without any wrappers or abstractions** — giving you full control and visibility.
 
+Supports use cases like:
+
+- 🏠 Home or Lab Firewalls
+- 🛡️ Host-level Firewalls
+- 🧩 Complex multi-zone setups
+
+---
+
+Table of Contents:
 - [🔥 nftables Ansible Role](#-nftables-ansible-role)
   - [🚀 Quick Start](#-quick-start)
     - [🔧 Install the role](#-install-the-role)
@@ -25,17 +35,13 @@
     - [`nftables_forward_rules` and `nftables_input_rules` (list of dicts)](#nftables_forward_rules-and-nftables_input_rules-list-of-dicts)
       - [`sources` / `destinations` entry:](#sources--destinations-entry)
       - [destination\_ports example:](#destination_ports-example)
+  - [🧠 Advanced: Multilayer Variable Merging](#-advanced-multilayer-variable-merging)
+    - [📁 Why This Matters](#-why-this-matters)
+    - [📘 Example](#-example)
+    - [🧱 Works with the following top-level variables](#-works-with-the-following-top-level-variables)
+    - [🧩 Use Case](#-use-case)
+    - [🛑 Use Case: Default Deny at the End](#-use-case-default-deny-at-the-end)
 
-
-This Ansible role configures a powerful, policy-driven `nftables` firewall **without any wrappers or abstractions** — giving you full control and visibility.
-
-Supports use cases like:
-
-- 🏠 Home or Lab Routers  
-- 🛡️ Host-level Firewalls  
-- 🧩 Complex multi-zone setups  
-
----
 
 ## 🚀 Quick Start
 
@@ -379,5 +385,93 @@ destination_ports:
   udp:
     - 53
 ```
+
+
+## 🧠 Advanced: Multilayer Variable Merging
+
+This role supports layered variable merging, allowing you to define firewall config fragments across multiple Ansible variable files or scopes. Variables with numeric suffixes (e.g., _0, _1, ..., _9) will be automatically merged into the base variable name during processing.
+
+### 📁 Why This Matters
+This merging behavior enables:
+
+- 📦 Modular configuration: Define default rules in the role, common rules in group vars, and host-specific overrides in host vars — without needing to merge them manually.
+- 📚 Better readability: Small, focused files are easier to read and review than one giant blob of YAML.
+- 📂 Multi-file layouts: Place firewall fragments in different files (firewall_base.yml, firewall_home.yml, firewall_prod.yml, etc.) and layer them by naming the keys _0, _1, etc.
+
+🛑 Rule ordering control: For example, ensure a "default deny" rule is always last:
+
+### 📘 Example
+
+```yaml
+# nftables_input_rules (base)
+nftables_input_rules:
+  - name: allow all from lan
+    zone: lan
+    action: accept
+    sources:
+      subnets: true
+
+# nftables_input_rules_1 (e.g. from another file or role)
+nftables_input_rules_1:
+  - name: allow ssh from lab
+    zone: lab
+    action: accept
+    sources:
+      subnets: true
+    destination_ports:
+      tcp:
+        - 22
+```
+
+These will be merged into one list:
+
+```yaml
+nftables_input_rules:
+  - name: allow all from lan
+    zone: lan
+    action: accept
+    sources:
+      subnets: true
+
+  - name: allow ssh from lab
+    zone: lab
+    action: accept
+    sources:
+      subnets: true
+    destination_ports:
+      tcp: [22]
+```
+
+### 🧱 Works with the following top-level variables
+
+Each supports up to _9 fragments:
+
+| Base Variable            | Merged Suffixes Supported |
+| ------------------------ | ------------------------- |
+| `nftables_global`        | `_0` → `_9`               |
+| `nftables_zones`         | `_0` → `_9`               |
+| `nftables_sets`          | `_0` → `_9`               |
+| `nftables_dnsmasq_sets`  | `_0` → `_9`               |
+| `nftables_input_rules`   | `_0` → `_9`               |
+| `nftables_forward_rules` | `_0` → `_9`               |
+
+### 🧩 Use Case
+You want:
+- Global input rules in group_vars/all.yml
+- Additional rules only for production in group_vars/prod.yml
+- Host-specific exceptions in host_vars/firewall1.yml
+- Default deny policy that is always last
+
+Just use the layered keys in each file, and they’ll be composed automatically — no manual merging needed.
+
+### 🛑 Use Case: Default Deny at the End
+
+```yaml
+nftables_input_rules_9:
+  - name: Default deny
+    action: reject
+```
+
+This ensures your default deny rule stays last, regardless of what other layers contribute earlier.
 
 
