@@ -63,10 +63,6 @@ jobs:
           git tag "$TAG" -m "$TAG"
           git push origin "$TAG"
 
-      - name: debug
-        run: |
-          ls -alh
-
       - name: Generate a changelog
         uses: orhun/git-cliff-action@v4
         id: git-cliff_specific_version
@@ -75,6 +71,10 @@ jobs:
           args: --verbose --unreleased --tag ${{ steps.parse_version.outputs.version }}
         env:
           OUTPUT: release-notes.md
+
+      - name: debug
+        run: |
+          ls -alh
 
       - name: Create Release
         env:
