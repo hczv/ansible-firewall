@@ -78,6 +78,8 @@ jobs:
           ls -alh
           ls -alh ../
           ls -alh ../../
+          ls -alh ../../../
+          ls -alh ../../../../
 
       - name: Create Release
         env:
