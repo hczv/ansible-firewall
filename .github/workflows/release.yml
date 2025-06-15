@@ -82,7 +82,7 @@ jobs:
           ls -alh ../../../bin
           ls -alh ../../../../
           cp ../../../bin/git-cliff ./
-          ./git-cliff* --vervose --unreleased --tag ${{ steps.parse_version.outputs.version }}
+          ./git-cliff* --verbose --unreleased --tag ${{ steps.parse_version.outputs.version }}
 
       - name: Create Release
         env:
