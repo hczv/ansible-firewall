@@ -68,15 +68,6 @@ jobs:
           git push origin "$BRANCH_NAME"
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
 
-      - name: Generate changelog only for release version
-        id: git_cliff_tag
-        run: |
-          # Capture changelog only for current version tag
-          RELEASE_CHANGELOG=$(git cliff --tag "${{ github.event.inputs.version }}")
-          echo "RELEASE_CHANGELOG<<EOF" >> $GITHUB_ENV
-          echo "$RELEASE_CHANGELOG" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-
       - name: Read changelog content
         id: read_changelog
         run: |
