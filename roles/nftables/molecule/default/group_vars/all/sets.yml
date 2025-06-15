@@ -1,0 +1,24 @@
+nftables_sets:
+  - name: any
+    subnets:
+      - 0.0.0.0/0
+  - name: wan_ip
+    subnets:
+      - 10.11.0.1
+
+nftables_sets_1:
+  - name: external_system
+    subnets:
+      - 192.168.7.7
+
+
+nftables_dnsmasq_sets:
+  - name: external-hosts-example
+    hosts:
+      - google.com
+      - yahoo.com
+
+nftables_dnsmasq_sets_1:
+  - name: other-external-hosts
+    hosts:
+      - bing.com

@@ -40,59 +40,27 @@ add table ip filter
 {{ functions.create_set(set) }}
 {% endfor %}
 
-{% for set in nftables_dnsmasq_sets | default([]) -%}
+{% for set in parsers.get_merged_list('nftables_dnsmasq_sets') | from_json | default([]) -%}
 {{ functions.create_set(set, true) }}
 {% endfor %}
 
 #########################################
 ############ Add input rules ############
 #########################################
-{% for input_rule in nftables_input_rules | default([]) -%}
+{% for input_rule in parsers.get_merged_list('nftables_input_rules') | from_json | default([]) -%}
 {{ functions.create_input_rule(input_rule, nftables_global) }}
 {% endfor %}
 
 ###########################################
 ############ Add forward rules ############
 ###########################################
-{% for forward_rule in nftables_forward_rules | default([]) -%}
+{% for forward_rule in parsers.get_merged_list('nftables_forward_rules') | from_json | default([]) -%}
 {{ functions.create_forward_rule(forward_rule, nftables_global) }}
 {% endfor %}
 
 #######################################
 ############ Add nat rules ############
 #######################################
-{% for nat_rule in nftables_nat | default([]) -%}
+{% for nat_rule in parsers.get_merged_list('nftables_nat') | from_json | default([]) -%}
 {{ functions.create_nat_rule(nat_rule, nftables_global) }}
 {% endfor %}
-
-{{ parsers.get_defined_vars('nftables_global') }}
-----
-{#{% set merged_dict = functions.get_deep_merged_var('nftables_global') | from_json %}
-{{ merged_dict }}
-{% for k, v in merged_dict.items() %}
-  key: {{ k }}, value: {{ v }}
-{% endfor %}#}
-
-
-{% for k, v in (parsers.get_merged_map('nftables_global') | from_json).items() %}
-  key: {{ k }}, value: {{ v }}
-{% endfor %}
-
-{% set merged_dict3 = parsers.get_merged_list('nftables_global2') | from_json %}
-{{ merged_dict3 }}
-{% for item in merged_dict3 %}
-item {{ item }}
-{% endfor %}
-
-
-{% set merged_dict3 = parsers.get_merged_list('nftables_zones') | from_json %}
-{{ merged_dict3 }}
-{% for item in merged_dict3 %}
-item {{ item }}
-{% endfor %}
-
-##
-{{ parsers.get_defined_vars('nftables_global') | from_json }}
-##
-{{ parsers.get_merged_map('nftables_global') | from_json }}
-#
