@@ -31,6 +31,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up git config
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a ${{ github.event.inputs.version }} -m "${{ github.event.inputs.version }}"
+
       - name: Generate a changelog
         uses: orhun/git-cliff-action@v4
         id: git-cliff
@@ -39,11 +45,6 @@ jobs:
           args: --verbose
         env:
           OUTPUT: CHANGELOG.md
-
-      - name: Set up git config
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Create a new branch and commit changelog
         run: |
