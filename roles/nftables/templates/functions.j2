@@ -166,7 +166,7 @@ add rule ip filter {{ chain }} {# #}
 {%- if dst_set %} ip daddr @{{ dst_set }} {% endif -%}
 {{ proto }} dport {# #}
 {%- if dst_ports | length > 1 %} { {{ dst_ports | join(', ') }} }{% else %} {{ dst_ports[0] }}{% endif %}
-counter {{ rule.action | default('accept') }} comment "{{ rule.name | default('unspecified', true) }}"
+{# #} counter {{ rule.action | default('accept') }} comment "{{ rule.name | default('unspecified', true) }}"
     {% endfor %}
 {% else %}
 add rule ip filter {{ chain }} {# #}
@@ -174,7 +174,7 @@ add rule ip filter {{ chain }} {# #}
 {%- if dst_zone %} oifname @{{ dst_zone }}_ifaces {% endif -%}
 {%- if src_set %} ip saddr @{{ src_set }} {% endif -%}
 {%- if dst_set %} ip daddr @{{ dst_set }} {% endif -%}
-counter {{ rule.action | default('accept') }} comment "{{ rule.name | default('unspecified', true) }}"
+{# #} counter {{ rule.action | default('accept') }} comment "{{ rule.name | default('unspecified', true) }}"
 {% endif %}
 {% endmacro %}
 
