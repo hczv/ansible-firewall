@@ -25,6 +25,14 @@ nftables_input_rules_1:
     destination_ports:
       tcp:
         - 22
+  - name: allow icmp request from lab
+    zone: lab
+    action: accept
+    sources:
+      subnets: true
+    destination_ports:
+      icmp:
+        - echo-request
   - name: allow dns from lab
     zone: lab
     action: accept
