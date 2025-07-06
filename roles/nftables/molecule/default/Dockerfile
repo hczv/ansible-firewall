@@ -4,7 +4,7 @@ ARG USERNAME=molecule
 ARG USERID=1000
 ARG GROUPID=1000
 
-RUN dnf install -y nftables iptables sudo
+RUN dnf install -y nftables iptables sudo iproute-tc
 RUN groupadd --gid ${GROUPID} ${USERNAME}
 RUN useradd --comment "molecule account" --gid ${GROUPID} --uid ${USERID} -p ${USERNAME} -G wheel -s /usr/bin/bash -m ${USERNAME}
 

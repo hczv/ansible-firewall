@@ -43,6 +43,7 @@ This collection builds on ideas and practices from:
 - [imp1sh/ansible_managemynetwork](https://github.com/imp1sh/ansible_managemynetwork/blob/main/roles/ansible_nftables/tasks/checks.yml)
 - [Icebird-wall/BirdWall](https://github.com/Icebird-wall/BirdWall)
 - [influxdata/ansible-collection-molecule](https://github.com/influxdata/ansible-collection-molecule/blob/main/molecule/ec2_platform/molecule.yml)
+- [QoS on GNU/Linux](https://std.rocks/gnulinux_network_traffic_control.html)
 
 
 ## 📦 Release Process

@@ -2,24 +2,40 @@
 nftables_zones:
   - name: wan
     interfaces:
-      - eth0
+      - interface: eth0
+    #  - eth0
 
 nftables_zones_1:
   - name: lan
     interfaces:
-      - eth1
-      - eth2
-    subnets:
-      - 10.0.0.0/24
-      - 10.0.1.0/24
+      - interface: eth1
+        subnet: 10.0.0.0/24
+        rate: 1gbit
+      - interface: eth2
+        subnet: 10.0.1.0/24
     allow_intrazone_traffic: true
+
+#nftables_zones_1:
+#  - name: lan
+#    interfaces:
+#      - eth1
+#      - eth2
+#    subnets:
+#      - 10.0.0.0/24
+#      - 10.0.1.0/24
+#    allow_intrazone_traffic: true
+
 
 nftables_zones_2:
   - name: lab
     interfaces:
-      - eth3
-      - eth4
-    subnets:
-      - 10.13.33.0/24
-      - 10.14.44.0/24
+      - interface: eth3
+        subnet: 10.13.33.0/24
+      - interface: eth4
+        subnet: 10.14.44.0/24
+    #  - eth3
+    #  - eth4
+    #subnets:
+    #  - 10.13.33.0/24
+    #  - 10.14.44.0/24
     allow_intrazone_traffic: true

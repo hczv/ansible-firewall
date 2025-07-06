@@ -28,22 +28,33 @@ add rule ip filter forward ct state vmap { established: accept, related: accept,
 
 {% endmacro %}
 
-{% macro create_zone(zone) -%}
+{% macro create_zone(zone) %}
 # Zone: {{ zone.name }}
 # Define interface set
 add set ip filter {{ zone.name }}_ifaces { type ifname; flags interval; }
-add element ip filter {{ zone.name }}_ifaces { {{ zone.interfaces | join(', ') }} }
+add element ip filter {{ zone.name }}_ifaces {
+  {{ zone.interfaces | map(attribute='interface') | join(', ') }}
+}
 
-{%- if zone.subnets is defined and zone.subnets %}
+{%- set subnets = [] %}
+{%- for iface in zone.interfaces %}
+  {%- if iface.subnet is defined %}
+    {%- set _ = subnets.append(iface.subnet) %}
+  {%- endif %}
+{%- endfor %}
+{%- if subnets %}
 # Define Subnet set
 add set ip filter {{ zone.name }}_subnets { type ipv4_addr; flags interval; }
-add element ip filter {{ zone.name }}_subnets { {{ zone.subnets | join(', ') }} }
-{%- endif %}
+add element ip filter {{ zone.name }}_subnets {
+  {{ subnets | join(', ') }}
+}
+{% endif %}
 
 {%- if zone.allow_intrazone_traffic is defined and zone.allow_intrazone_traffic %}
 # Allow intra-zone traffic for {{ zone.name }}
 add rule ip filter forward iifname @{{ zone.name }}_ifaces oifname @{{ zone.name }}_ifaces accept comment "intrazone traffic {{ zone.name }}"
 {%- endif %}
+
 {% endmacro %}
 
 {% macro create_set(set, dnsmasq=false) %}

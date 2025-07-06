@@ -1,0 +1,40 @@
+#!/bin/bash
+
+set -e
+
+
+{% for zone in parsers.get_merged_list('nftables_zones') | from_json | default([]) %}
+# Zone: {{ zone.name }}
+# Delete any policies present
+    {% for interface in zone.interfaces %}
+tc qdisc del dev {{ interface.interface }} root 2>/dev/null || true
+
+tc qdisc add dev {{ interface.interface }} root handle 1: htb default 30
+tc class add dev {{ interface.interface }} parent 1: classid 1:1 htb rate {{ interface.rate }} ceil {{ interface.rate }}
+tc class add dev {{ interface.interface }} parent 1:1 classid 1:30 htb rate 1kbit ceil {{ interface.rate }}
+tc qdisc add dev {{ interface.interface }} parent 1:30 handle 130: fq_codel
+    {% endfor %}
+{% endfor %}
+
+
+
+
+
+
+{% for iface in qos_interfaces %}
+tc qdisc del dev {{ iface.name }} root 2>/dev/null || true
+tc qdisc add dev {{ iface.name }} root handle 1: htb default 30
+tc class add dev {{ iface.name }} parent 1: classid 1:1 htb rate 1gbit ceil 1gbit
+tc class add dev {{ iface.name }} parent 1:1 classid 1:30 htb rate 1kbit ceil 1gbit
+tc qdisc add dev {{ iface.name }} parent 1:30 handle 130: fq_codel
+
+{% for entry in qos_guarantees %}
+{% set mark = entry.mark if iface.direction == 'to' else entry.mark + 1 %}
+{% set classid = mark %}
+tc class add dev {{ iface.name }} parent 1:1 classid 1:{{ classid }} htb rate {{ entry.min_rate }} ceil {{ entry.max_rate }}
+tc qdisc add dev {{ iface.name }} parent 1:{{ classid }} handle {{ 100 + classid }}: fq_codel
+tc filter add dev {{ iface.name }} parent 1: protocol ip prio 1 handle {{ mark }} fw flowid 1:{{ classid }}
+{% endfor %}
+{% endfor %}
+
+

@@ -29,7 +29,7 @@ add table ip filter
 ###################################
 ############ Add zones ############
 ###################################
-{% for zone in parsers.get_merged_list('nftables_zones') | from_json | default([]) -%}
+{% for zone in parsers.get_merged_list('nftables_zones') | from_json | default([]) %}
 {{ functions.create_zone(zone) }}
 {% endfor %}
 

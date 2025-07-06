@@ -22,6 +22,9 @@ nftables_forward_rules:
         - 22
   - name: forward rule without destination ports
     action: accept
+    qos:
+      mark: 10
+      guarantee: 10mbit
     sources:
       - zone: lan
         subnets: true
