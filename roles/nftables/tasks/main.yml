@@ -2,6 +2,12 @@
 - name: Include OS vars
   ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
 
+- name: Template vars
+  ansible.builtin.import_tasks: "template_vars.yml"
+
+- name: Disable conflicting services
+  ansible.builtin.import_tasks: "disableconflicting.yml"
+
 - name: Install nftables
   ansible.builtin.package:
     name: nftables

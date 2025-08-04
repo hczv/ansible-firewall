@@ -29,38 +29,38 @@ add table ip filter
 ###################################
 ############ Add zones ############
 ###################################
-{% for zone in parsers.get_merged_list('nftables_zones') | from_json | default([]) -%}
+{% for zone in nftables_zones | default([]) -%}
 {{ functions.create_zone(zone) }}
 {% endfor %}
 
 ###################################
 ############ Add sets ############
 ###################################
-{% for set in parsers.get_merged_list('nftables_sets') | from_json | default([]) -%}
+{% for set in nftables_sets | default([]) -%}
 {{ functions.create_set(set) }}
 {% endfor %}
 
-{% for set in parsers.get_merged_list('nftables_dnsmasq_sets') | from_json | default([]) -%}
+{% for set in nftables_dnsmasq_sets | default([]) -%}
 {{ functions.create_set(set, true) }}
 {% endfor %}
 
 #########################################
 ############ Add input rules ############
 #########################################
-{% for input_rule in parsers.get_merged_list('nftables_input_rules') | from_json | default([]) -%}
+{% for input_rule in nftables_input_rules | default([]) -%}
 {{ functions.create_input_rule(input_rule, nftables_global) }}
 {% endfor %}
 
 ###########################################
 ############ Add forward rules ############
 ###########################################
-{% for forward_rule in parsers.get_merged_list('nftables_forward_rules') | from_json | default([]) -%}
+{% for forward_rule in nftables_forward_rules | default([]) -%}
 {{ functions.create_forward_rule(forward_rule, nftables_global) }}
 {% endfor %}
 
 #######################################
 ############ Add nat rules ############
 #######################################
-{% for nat_rule in parsers.get_merged_list('nftables_nat') | from_json | default([]) -%}
+{% for nat_rule in nftables_nat | default([]) -%}
 {{ functions.create_nat_rule(nat_rule, nftables_global) }}
 {% endfor %}

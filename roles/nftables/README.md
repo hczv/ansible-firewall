@@ -389,7 +389,9 @@ destination_ports:
 
 ## 🧠 Advanced: Multilayer Variable Merging
 
-This role supports layered variable merging, allowing you to define firewall config fragments across multiple Ansible variable files or scopes. Variables with numeric suffixes (e.g., _0, _1, ..., _9) will be automatically merged into the base variable name during processing.
+This role supports layered variable merging, allowing you to define firewall config fragments across multiple Ansible variable files or scopes. Variables with suffixes (e.g., _0, _1, ..., _9) will be automatically merged into the base variable name during processing.
+
+anything afhher the underscore will be merged into the base variable name during processing. This allows you to define firewall config fragments across multiple Ansible variable files or scopes. Variables
 
 ### 📁 Why This Matters
 This merging behavior enables:
@@ -411,8 +413,8 @@ nftables_input_rules:
     sources:
       subnets: true
 
-# nftables_input_rules_1 (e.g. from another file or role)
-nftables_input_rules_1:
+# nftables_input_rules_1 (e.g. from another group var)
+nftables_input_rules_ssh:
   - name: allow ssh from lab
     zone: lab
     action: accept
@@ -446,14 +448,13 @@ nftables_input_rules:
 
 Each supports up to _9 fragments:
 
-| Base Variable            | Merged Suffixes Supported |
-| ------------------------ | ------------------------- |
-| `nftables_global`        | `_0` → `_9`               |
-| `nftables_zones`         | `_0` → `_9`               |
-| `nftables_sets`          | `_0` → `_9`               |
-| `nftables_dnsmasq_sets`  | `_0` → `_9`               |
-| `nftables_input_rules`   | `_0` → `_9`               |
-| `nftables_forward_rules` | `_0` → `_9`               |
+| Base Variable            | Anything after the underscore are fragments  |
+| ------------------------ | -------------------------------------------- |
+| `nftables_zones`         | ✔                                            |
+| `nftables_sets`          | ✔                                            |
+| `nftables_dnsmasq_sets`  | ✔                                            |
+| `nftables_input_rules`   | ✔                                            |
+| `nftables_forward_rules` | ✔                                            |
 
 ### 🧩 Use Case
 You want:
