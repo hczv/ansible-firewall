@@ -23,7 +23,8 @@
                 "editor.wordWrap": "bounded",
                 "editor.wordWrapColumn": 200,
                 "explorer.confirmDelete": false,
-                "explorer.confirmDragAndDrop": false
+                "explorer.confirmDragAndDrop": false,
+                "dev.containers.dockerCredentialHelper": false
             },
             "extensions": [
                 "redhat.ansible",

@@ -50,14 +50,13 @@ add rule ip filter forward iifname @{{ zone.name }}_ifaces oifname @{{ zone.name
 {% if dnsmasq %}
 add set ip filter {{ set.name }} { type ipv4_addr; timeout 4h; }
 {% else %}
-define {{ set.name }} = {{ '{ ' ~ (set.subnets | unique | join(', ')) ~ ' }' if set.subnets | unique | length > 1 else set.subnets | unique | first }}
-
-
 add set ip filter {{ set.name }} { type ipv4_addr; flags interval; }
 {% endif %}
 
 {% if set.subnets is defined and set.subnets %}
 add element ip filter {{ set.name }} { {{ set.subnets | join(', ') }} }
+# Extra define for {{ set.name }} due to nat not being able to use set directly
+define {{ set.name }} = {{ '{ ' ~ (set.subnets | unique | join(', ')) ~ ' }' if set.subnets | unique | length > 1 else set.subnets | unique | first }}
 {% endif %}
 {% endmacro %}
 
