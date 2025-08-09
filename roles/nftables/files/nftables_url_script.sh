@@ -18,7 +18,7 @@ function log() {
 # Usage: cmp <current_hash> <previous_file>
 cmp() {
     file1=$(sha256sum "$1" | awk '{print $1}')
-    file2=$(sha256sum "$1" | awk '{print $1}')
+    file2=$(sha256sum "$2" | awk '{print $1}')
     if [ "$file1" == "$file2" ]; then
         return 0
     else
@@ -27,26 +27,30 @@ cmp() {
 }
 
 generate_nftables_file() {
-    name=$1
-    set_download_path=$2
+    local name="$1" set_download_path="$2"
+    local nftables_set_location="$nftables_dir_path/$name.conf"
 
-    nftables_set_location="$nftables_dir_path/$name.conf"
-    echo -n "add element ip filter ${name} { " > "$nftables_set_location"
-    awk '
-      BEGIN {
-        octet="(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])"
-        cidr="(/([0-9]|[1-2][0-9]|3[0-2]))?"
-        ip4cidr="^" octet "\\." octet "\\." octet "\\." octet cidr "$"
-      }
-      $0 ~ ip4cidr {
-        if (count++ > 0) printf ","
-        printf "%s", $0
-      }
-      END { print "" }
-    ' $set_download_path/* >> "$nftables_set_location"
-    echo " } " >> "$nftables_set_location"
-    log "Saved ${#valid_ips[@]} valid IPs to $nftables_set_location"
-
+    {
+        printf "add element ip filter %s { " "$name"
+        awk '
+          BEGIN {
+            octet="(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])"
+            cidr="(/([0-9]|[1-2][0-9]|3[0-2]))?"
+            ip4cidr="^" octet "\\." octet "\\." octet "\\." octet cidr "$"
+          }
+          $0 ~ ip4cidr { ips[NR]=$0 }
+          END {
+            for (i=1; i<=NR; i++) {
+              if (ips[i] != "") {
+                printf "%s%s", (count++ ? "," : ""), ips[i]
+              }
+            }
+            print ""
+          }
+        ' "$set_download_path"/*
+        echo " }"
+    } > "$nftables_set_location"
+    log "Saved nftables set to $nftables_set_location"
 }
 
 mkdir -p "$download_path"
@@ -57,34 +61,31 @@ if ! jq -c '.[]' "$config_path" > /dev/null; then
     exit 1
 fi
 
-jq -c '.[]' "$config_path" | while read -r line;
-do
+jq -c '.[]' "$config_path" | while read -r line; do
     log "Processing: $line"
 
-    # Parse JSON with error checking
-    name=$(echo "$line" | jq -r '.name')
-    urls=$(echo "$line" | jq -r '.urls')
+    name=$(jq -r '.name' <<<"$line")
+    mapfile -t urls < <(jq -r '.urls[]' <<<"$line")
 
     set_download_path="$download_path/$name"
     mkdir -p "$set_download_path"
 
     # Remove previous old files
-    rm -f "$set_download_path/*.old"
+    rm -f "$set_download_path"/*.old
 
     # Move old files
-    find "$set_download_path" -type f ! -name '*.old' -exec sh -c 'mv "$0" "${0%.*}".old' {} \;
+    for f in "$set_download_path"/*; do
+        [[ -f "$f" ]] && mv -- "$f" "${f%.*}.old"
+    done
 
     generate_nftables_file=false
-    while read -r url;
-    do
-        formatted_url=$(echo $url | tr -d '"' )
-        output_file_name=$(basename "${formatted_url}")
+    for url in "${urls[@]}"; do
+        output_file_name=$(basename "${url}")
         download_file_location="$set_download_path/$output_file_name.list"
         old_file_location="$set_download_path/$output_file_name.old"
 
-        log "Downloading list: $formatted_url to $download_file_location"
-        curl -f --silent --show-error -o "$download_file_location" -O -L "$formatted_url"
-        if [[ $? != 0 ]]; then
+        log "Downloading list: $url to $download_file_location"
+        if ! curl -f --silent --show-error -o "$download_file_location" -L "$url"; then
             log "Error: Failed to download $url - skipping"
             continue
         fi
@@ -103,7 +104,7 @@ do
             generate_nftables_file=true
             reload_nftables=true
         fi
-    done < <(echo "$urls" | jq -c '.[]')
+    done
 
     if [[ "$generate_nftables_file" == "true" || ! -f "$nftables_dir_path/$name.conf" ]]; then
         log "Generating nftables file \"$nftables_dir_path/$name.conf\""
