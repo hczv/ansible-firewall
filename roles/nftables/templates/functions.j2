@@ -50,13 +50,16 @@ add rule ip filter forward iifname @{{ zone.name }}_ifaces oifname @{{ zone.name
 {% if dnsmasq %}
 add set ip filter {{ set.name }} { type ipv4_addr; timeout 4h; }
 {% else %}
-add set ip filter {{ set.name }} { type ipv4_addr; flags interval; }
+add set ip filter {{ set.name }} { type ipv4_addr; flags interval; auto-merge; }
 {% endif %}
 
 {% if set.subnets is defined and set.subnets %}
 add element ip filter {{ set.name }} { {{ set.subnets | join(', ') }} }
 # Extra define for {{ set.name }} due to nat not being able to use set directly
 define {{ set.name }} = {{ '{ ' ~ (set.subnets | unique | join(', ')) ~ ' }' if set.subnets | unique | length > 1 else set.subnets | unique | first }}
+{% endif %}
+{% if set.urls is defined and set.urls %}
+include "/etc/nftables.d/{{ set.name }}.conf"
 {% endif %}
 {% endmacro %}
 

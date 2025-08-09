@@ -6,6 +6,9 @@ nftables_sets:
   - name: wan_ip
     subnets:
       - 10.11.0.1
+  - name: blocked_ips
+    urls:
+      - https://ipbl.herrbischoff.com/drop.txt
 
 nftables_sets_1:
   - name: external_system

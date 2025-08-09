@@ -8,7 +8,7 @@ ARG GROUPID=1000
 RUN dnf upgrade -y
 RUN python3 -m ensurepip --upgrade
 RUN dnf install -y epel-release
-RUN dnf install -y python3-devel gcc make git fish neofetch wget util-linux util-linux-user which vim powerline powerline-fonts vim-powerline sudo sshpass python3-tkinter htop procps rsync netcat
+RUN dnf install -y python3-devel gcc make git fish neofetch wget util-linux util-linux-user which vim powerline powerline-fonts vim-powerline sudo sshpass python3-tkinter htop procps rsync netcat jq
 
 # Create VSCode user
 RUN groupadd --gid ${GROUPID} ${USERNAME}

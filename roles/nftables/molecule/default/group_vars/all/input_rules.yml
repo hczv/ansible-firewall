@@ -1,5 +1,12 @@
 ---
 nftables_input_rules:
+  - name: drop from blocked_ip set
+    zone: lan
+    action: accept
+    sources:
+      sets:
+        - blocked_ips
+
   - name: allow all from lan
     zone: lan
     action: accept
