@@ -2,6 +2,11 @@
 
 <!-- ignore lint rules that are often triggered by content generated from commits / git-cliff -->
 <!-- markdownlint-disable line-length no-bare-urls ul-style emphasis-style -->
+## [1.0.7](https://github.com/hczv/ansible-firewall/compare/1.0.6..1.0.7) - 2025-08-09
+
+### <!-- 1 -->🐛 Bug Fixes
+- Ensure list items is loaded in order by @hczv in [#25](https://github.com/hczv/ansible-firewall/pull/25) 
+
 ## [1.0.6](https://github.com/hczv/ansible-firewall/compare/1.0.5..1.0.6) - 2025-08-09
 
 ### <!-- 0 -->🚀 Features
@@ -9,6 +14,8 @@
 - Allow for dynamic naming by @hczv in [#22](https://github.com/hczv/ansible-firewall/pull/22) 
 
 ### <!-- 10 -->💼 Other
+- [release] - 1.0.6 by @hczv in [#24](https://github.com/hczv/ansible-firewall/pull/24) 
+- [release] - 1.0.6 by @github-actions[bot] in [e8176f1](https://github.com/hczv/ansible-firewall/commit/e8176f16d5cb4967194fb032feb7455afb50a9b1)
 - Update readme.md by @hczv in [bcba70b](https://github.com/hczv/ansible-firewall/commit/bcba70b0014fb239d501b931a97c8b671e7d81c6)
 - Optimized nftables_url_script by @hczv in [01e0c0f](https://github.com/hczv/ansible-firewall/commit/01e0c0f87e8e61e5d10d04d46202f33ad210fe12)
 - Initial logic by @hczv in [6ecdc93](https://github.com/hczv/ansible-firewall/commit/6ecdc93ad3c6093eabfbd4bb4d52180cf790fc7c)
