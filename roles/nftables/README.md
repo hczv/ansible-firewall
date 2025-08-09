@@ -336,6 +336,7 @@ Reusable named sets of subnets or IPs.
 |-----------|---------------|----------|------------------------------------|
 | `name`    | string        | ✅       | Set name                           |
 | `subnets` | list[string]  | ✅       | List of IPs or CIDRs               |
+| `urls` | list[string]     | ❌       | List of urls to download ip list   |
 
 ---
 

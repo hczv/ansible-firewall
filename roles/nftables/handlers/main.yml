@@ -6,3 +6,7 @@
     enabled: true
     state: restarted
   become: true
+
+- name: Refresh nftables urls
+  command: /usr/local/bin/nftables_url_script.sh no_reload
+  become: true

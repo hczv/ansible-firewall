@@ -8,6 +8,10 @@
 - name: Disable conflicting services
   ansible.builtin.import_tasks: "disableconflicting.yml"
 
+- name: Ensure nftables_sets urls are handled
+  ansible.builtin.import_tasks: "nftables_sets_urls.yml"
+  when: nftables_sets | selectattr('urls', 'defined') | count > 0
+
 - name: Install nftables
   ansible.builtin.package:
     name: nftables

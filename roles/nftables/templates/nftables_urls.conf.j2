@@ -1,0 +1,3 @@
+#jinja2: lstrip_blocks: True
+{% set filtered_sets = nftables_sets | selectattr('urls', 'defined') %}
+{{ filtered_sets | to_json(indent=2) }}

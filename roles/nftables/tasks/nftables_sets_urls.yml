@@ -1,0 +1,44 @@
+---
+
+- name: Install jq
+  ansible.builtin.package:
+    name: jq
+    state: present
+
+- name: Ensure nftables.d directory exists
+  ansible.builtin.file:
+    path: "/etc/nftables.d"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure include files exists
+  ansible.builtin.file:
+    path: "/etc/nftables.d/{{ item.name }}.conf"
+    state: touch
+    owner: root
+    group: root
+    mode: "0644"
+  changed_when: false
+  loop: "{{ nftables_sets | selectattr('urls', 'defined') | list }}"
+
+- name: Ensure url script exists
+  ansible.builtin.copy:
+    src: nftables_url_script.sh
+    dest: "/usr/local/bin/nftables_url_script.sh"
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure nftables_urls config exists
+  ansible.builtin.template:
+    src: nftables_urls.conf.j2
+    dest: "/etc/nftables_urls.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Refresh nftables urls
+
+- name: Refresh nftables urls if needed
+  ansible.builtin.meta: flush_handlers

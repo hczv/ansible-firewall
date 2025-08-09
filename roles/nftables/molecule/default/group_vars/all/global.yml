@@ -3,7 +3,7 @@ nftables_global:
   default_policy:
     input: accept
     forward: accept
-    output: accept
+    output: drop
   logging:
     enabled: true
     level: info
@@ -16,4 +16,4 @@ nftables_global_1:
 
 nftables_global_2:
   default_policy:
-    output: drop
+    output: accept
