@@ -2,6 +2,17 @@
 
 <!-- ignore lint rules that are often triggered by content generated from commits / git-cliff -->
 <!-- markdownlint-disable line-length no-bare-urls ul-style emphasis-style -->
+## [1.0.6](https://github.com/hczv/ansible-firewall/compare/1.0.5..1.0.6) - 2025-08-09
+
+### <!-- 0 -->🚀 Features
+- Nftables sets can now use urls with ip lists by @hczv in [#23](https://github.com/hczv/ansible-firewall/pull/23) 
+- Allow for dynamic naming by @hczv in [#22](https://github.com/hczv/ansible-firewall/pull/22) 
+
+### <!-- 10 -->💼 Other
+- Update readme.md by @hczv in [bcba70b](https://github.com/hczv/ansible-firewall/commit/bcba70b0014fb239d501b931a97c8b671e7d81c6)
+- Optimized nftables_url_script by @hczv in [01e0c0f](https://github.com/hczv/ansible-firewall/commit/01e0c0f87e8e61e5d10d04d46202f33ad210fe12)
+- Initial logic by @hczv in [6ecdc93](https://github.com/hczv/ansible-firewall/commit/6ecdc93ad3c6093eabfbd4bb4d52180cf790fc7c)
+
 ## [1.0.5](https://github.com/hczv/ansible-firewall/compare/1.0.4..1.0.5) - 2025-07-06
 
 ### <!-- 0 -->🚀 Features
@@ -9,6 +20,9 @@
 
 ### <!-- 1 -->🐛 Bug Fixes
 - Ensure that port and counter is seperated by a space by @hczv in [#19](https://github.com/hczv/ansible-firewall/pull/19) 
+
+### <!-- 10 -->💼 Other
+- [release] - 1.0.5 by @github-actions[bot] in [#21](https://github.com/hczv/ansible-firewall/pull/21) 
 
 ## [1.0.4](https://github.com/hczv/ansible-firewall/compare/1.0.3..1.0.4) - 2025-06-15
 
