@@ -8,7 +8,11 @@
     nftables_nat:           "{{ nftables_nat           | default([]) + (lookup('vars', item) if item.startswith('nftables_nat_') else []) }}"
     nftables_sets:          "{{ nftables_sets          | default([]) + (lookup('vars', item) if item.startswith('nftables_sets_') else []) }}"
     nftables_dnsmasq_sets:  "{{ nftables_dnsmasq_sets  | default([]) + (lookup('vars', item) if item.startswith('nftables_dnsmasq_sets_') else []) }}"
-  loop: "{{ hostvars[inventory_hostname].keys() | select('match', '^(nftables_zones_|nftables_input_rules_|nftables_forward_rules_|nftables_nat_|nftables_sets_|nftables_dnsmasq_sets_)') | list }}"
+  loop: >-
+    {{ hostvars[inventory_hostname].keys()
+       | select('match', '^(nftables_zones_|nftables_input_rules_|nftables_forward_rules_|nftables_nat_|nftables_sets_|nftables_dnsmasq_sets_)')
+       | sort
+       | list }}
 
 #- name: List var
 #  ansible.builtin.debug:
