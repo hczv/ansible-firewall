@@ -1,8 +1,8 @@
 ---
 
-- name: Install jq
+- name: Install dependencies
   ansible.builtin.package:
-    name: jq
+    name: "{{ nftables_url_dependencies }}"
     state: present
 
 - name: Ensure nftables.d directory exists
@@ -24,8 +24,8 @@
   loop: "{{ nftables_sets | selectattr('urls', 'defined') | list }}"
 
 - name: Ensure url script exists
-  ansible.builtin.copy:
-    src: nftables_url_script.sh
+  ansible.builtin.template:
+    src: nftables_url_script.sh.j2
     dest: "/usr/local/bin/nftables_url_script.sh"
     owner: root
     group: root
@@ -39,6 +39,13 @@
     group: root
     mode: "0644"
   notify: Refresh nftables urls
+
+- name: Daily refresh of nftables_urls
+  ansible.builtin.cron:
+    name: "refresh nftables_urls"
+    minute: "30"
+    hour: "3"
+    job: "/usr/local/bin/nftables_url_script.sh"
 
 - name: Refresh nftables urls if needed
   ansible.builtin.meta: flush_handlers

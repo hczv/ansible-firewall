@@ -61,7 +61,7 @@ if ! jq -c '.[]' "$config_path" > /dev/null; then
     exit 1
 fi
 
-jq -c '.[]' "$config_path" | while read -r line; do
+while read -r line; do
     log "Processing: $line"
 
     name=$(jq -r '.name' <<<"$line")
@@ -113,9 +113,19 @@ jq -c '.[]' "$config_path" | while read -r line; do
         log "Skipping generating nftables file \"$nftables_dir_path/$name.conf\""
     fi
 
-done
+done <<< "$(jq -c '.[]' "$config_path")"
 
 if [[ "$reload_nftables" == "true" && "$1" != "no_reload" ]]; then
     log "Reloading nftables"
     systemctl restart nftables
+
+{% for nftables_url_sets_refresh_service in nftables_url_sets_refresh_services | default([]) %}
+    log "Sleeping for 5 seconds"
+    sleep 5
+    log "Reloading {{ nftables_url_sets_refresh_service }}"
+    systemctl restart {{ nftables_url_sets_refresh_service }}
+{% endfor %}
 fi
+
+log "Done refreshing lists"
+

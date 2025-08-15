@@ -25,3 +25,6 @@ nftables_dnsmasq_sets_1:
   - name: other-external-hosts
     hosts:
       - bing.com
+
+nftables_url_sets_refresh_services:
+  - crond # an example to ensure molecule tests go through
