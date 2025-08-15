@@ -3,3 +3,6 @@ nftables_conflicting_services:
   - iptables
   - firewalld
 nftables_config_path: "/etc/sysconfig/nftables.conf"
+nftables_url_dependencies:
+  - jq
+  - cronie
