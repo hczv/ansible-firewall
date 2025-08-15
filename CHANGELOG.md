@@ -2,10 +2,18 @@
 
 <!-- ignore lint rules that are often triggered by content generated from commits / git-cliff -->
 <!-- markdownlint-disable line-length no-bare-urls ul-style emphasis-style -->
+## [1.0.8](https://github.com/hczv/ansible-firewall/compare/1.0.7..1.0.8) - 2025-08-15
+
+### <!-- 10 -->💼 Other
+- Update nftables_url_script.sh by @hczv in [#27](https://github.com/hczv/ansible-firewall/pull/27) 
+
 ## [1.0.7](https://github.com/hczv/ansible-firewall/compare/1.0.6..1.0.7) - 2025-08-09
 
 ### <!-- 1 -->🐛 Bug Fixes
 - Ensure list items is loaded in order by @hczv in [#25](https://github.com/hczv/ansible-firewall/pull/25) 
+
+### <!-- 10 -->💼 Other
+- [release] - 1.0.7 by @github-actions[bot] in [#26](https://github.com/hczv/ansible-firewall/pull/26) 
 
 ## [1.0.6](https://github.com/hczv/ansible-firewall/compare/1.0.5..1.0.6) - 2025-08-09
 
