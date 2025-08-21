@@ -1,0 +1,9 @@
+Description=Load nftables_pbr rules on startup
+After=network.target
+StartLimitIntervalSec=0
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/nftables_pbr.sh
+
+[Install]
+WantedBy=multi-user.target

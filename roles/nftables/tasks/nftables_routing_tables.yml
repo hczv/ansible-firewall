@@ -1,0 +1,54 @@
+---
+
+- name: Install dependencies
+  ansible.builtin.package:
+    name: "{{ nftables_routing_table_dependencies }}"
+    state: present
+
+- name: Custom routing tables only supported on debian
+  ansible.builtin.fail:
+    msg: "nftables_routing_tables var only supported on debian systems"
+  when:
+    - ansible_facts['os_family'] != 'Debian'
+
+- name: Ensure rt_tables
+  ansible.builtin.template:
+    src: rt_tables.j2
+    dest: /etc/iproute2/rt_tables
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Ensure nftables_pbr.sh
+  ansible.builtin.template:
+    src: nftables_pbr.sh.j2
+    dest: /usr/local/bin/nftables_pbr.sh
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Ensure nftables_pbr service file
+  ansible.builtin.copy:
+    src: nftables_pbr.service
+    dest: /etc/systemd/system/nftables_pbr.service
+    owner: root
+    group: root
+    mode: "0755"
+  notify: Systemctl daemon-reload
+
+- name: Ensure systemd is reloaded
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable nftables_pbr
+  ansible.builtin.service:
+    name: "nftables_pbr"
+    state: started
+    enabled: true
+
+- name: Ensure rp_filter is set to loose mode
+  ansible.posix.sysctl:
+    name: net.ipv4.conf.all.rp_filter
+    value: 2
+    state: present
+    reload: yes
+  tags: molecule-notest

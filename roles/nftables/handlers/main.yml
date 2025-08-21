@@ -10,3 +10,9 @@
 - name: Refresh nftables urls
   command: /usr/local/bin/nftables_url_script.sh no_reload
   become: true
+
+- name: Systemctl daemon-reload
+  become: true
+  ansible.builtin.systemd:
+    daemon_reload: true
+    force: true

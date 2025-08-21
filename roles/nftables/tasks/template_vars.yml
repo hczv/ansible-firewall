@@ -2,15 +2,18 @@
 
 - name: Template nftables_* vars
   ansible.builtin.set_fact:
-    nftables_zones:         "{{ nftables_zones         | default([]) + (lookup('vars', item) if item.startswith('nftables_zones_') else []) }}"
-    nftables_input_rules:   "{{ nftables_input_rules   | default([]) + (lookup('vars', item) if item.startswith('nftables_input_rules_') else []) }}"
-    nftables_forward_rules: "{{ nftables_forward_rules | default([]) + (lookup('vars', item) if item.startswith('nftables_forward_rules_') else []) }}"
-    nftables_nat:           "{{ nftables_nat           | default([]) + (lookup('vars', item) if item.startswith('nftables_nat_') else []) }}"
-    nftables_sets:          "{{ nftables_sets          | default([]) + (lookup('vars', item) if item.startswith('nftables_sets_') else []) }}"
-    nftables_dnsmasq_sets:  "{{ nftables_dnsmasq_sets  | default([]) + (lookup('vars', item) if item.startswith('nftables_dnsmasq_sets_') else []) }}"
+    nftables_zones:          "{{ nftables_zones          | default([]) + (lookup('vars', item) if item.startswith('nftables_zones_') else []) }}"
+    nftables_input_rules:    "{{ nftables_input_rules    | default([]) + (lookup('vars', item) if item.startswith('nftables_input_rules_') else []) }}"
+    nftables_output_rules:   "{{ nftables_output_rules   | default([]) + (lookup('vars', item) if item.startswith('nftables_output_rules_') else []) }}"
+    nftables_forward_rules:  "{{ nftables_forward_rules  | default([]) + (lookup('vars', item) if item.startswith('nftables_forward_rules_') else []) }}"
+    nftables_nat:            "{{ nftables_nat            | default([]) + (lookup('vars', item) if item.startswith('nftables_nat_') else []) }}"
+    nftables_sets:           "{{ nftables_sets           | default([]) + (lookup('vars', item) if item.startswith('nftables_sets_') else []) }}"
+    nftables_dnsmasq_sets:   "{{ nftables_dnsmasq_sets   | default([]) + (lookup('vars', item) if item.startswith('nftables_dnsmasq_sets_') else []) }}"
+    nftables_routing_tables: "{{ nftables_routing_tables | default([]) + (lookup('vars', item) if item.startswith('nftables_routing_tables_') else []) }}"
+    nftables_chains:         "{{ nftables_chains         | default([]) + (lookup('vars', item) if item.startswith('nftables_chains_') else []) }}"
   loop: >-
     {{ hostvars[inventory_hostname].keys()
-       | select('match', '^(nftables_zones_|nftables_input_rules_|nftables_forward_rules_|nftables_nat_|nftables_sets_|nftables_dnsmasq_sets_)')
+       | select('match', '^(nftables_zones_|nftables_input_rules_|nftables_output_rules_|nftables_forward_rules_|nftables_nat_|nftables_sets_|nftables_dnsmasq_sets_|nftables_routing_tables_|nftables_chains_)')
        | sort
        | list }}
 

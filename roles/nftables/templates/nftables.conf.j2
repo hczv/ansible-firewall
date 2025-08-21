@@ -23,8 +23,9 @@ add table ip filter
 ####################################
 ############ Add chains ############
 ####################################
-# Source keys: {{ parsers.get_defined_vars('nftables_global') }}
-{{ functions.defaultchains(parsers.get_merged_map('nftables_global') | from_json) }}
+{% for chain in nftables_chains | default([]) -%}
+{{ functions.create_chain(chain) }}
+{% endfor %}
 
 ###################################
 ############ Add zones ############

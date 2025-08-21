@@ -1,4 +1,50 @@
 ---
+
+nftables_chains_input:
+  - name: input
+    type: filter
+    hook: input
+    priority: filter
+    policy: accept
+    state:
+      accept_loopback: true
+      established: accept
+      related: accept
+      invalid: drop
+
+nftables_chains_forward:
+  - name: forward
+    type: filter
+    hook: forward
+    priority: filter
+    policy: drop
+    state:
+      established: accept
+      related: accept
+      invalid: drop
+
+nftables_chains_output:
+  - name: output
+    type: filter
+    hook: output
+    priority: filter
+    policy: accept
+
+nftables_chains_prerouting:
+  - name: prerouting
+    type: nat
+    hook: prerouting
+    priority: dstnat
+    policy: accept
+
+nftables_chains_postrouting:
+  - name: postrouting
+    type: nat
+    hook: postrouting
+    priority: srcnat
+    policy: accept
+
+
 nftables_global:
   default_policy:
     input: accept
