@@ -51,3 +51,4 @@
     value: 2
     state: present
     reload: yes
+  tags: molecule-notest

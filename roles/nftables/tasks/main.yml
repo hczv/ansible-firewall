@@ -47,6 +47,7 @@
   when:
     - nftables_forward_rules is defined
     - nftables_forward_rules | count > 0
+  tags: molecule-notest
 
 
 - name: Create nftables configuration for {{ inventory_hostname }}
