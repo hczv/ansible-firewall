@@ -17,7 +17,7 @@
     dest: /etc/iproute2/rt_tables
     owner: root
     group: root
-    mode: 0644
+    mode: "0644"
 
 - name: Ensure nftables_pbr.sh
   ansible.builtin.template:
@@ -25,7 +25,7 @@
     dest: /usr/local/bin/nftables_pbr.sh
     owner: root
     group: root
-    mode: 0750
+    mode: "0750"
 
 - name: Ensure nftables_pbr service file
   ansible.builtin.copy:
@@ -33,7 +33,7 @@
     dest: /etc/systemd/system/nftables_pbr.service
     owner: root
     group: root
-    mode: 0755
+    mode: "0755"
   notify: Systemctl daemon-reload
 
 - name: Ensure systemd is reloaded
