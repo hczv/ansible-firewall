@@ -26,7 +26,7 @@ function rule_exists() {
 log "Adding ip rules"
 
 {% for routing_table in nftables_routing_tables | default([]) %}
-if rule_exists 0x{{ routing_table.mark }} {{ routing_table.name }}; then
+if rule_exists {{ routing_table.mark }} {{ routing_table.name }}; then
     log "Rule  {{ routing_table.mark }}/{{ routing_table.name }} already exists, skipping addition."
 else
     log "ip rule add fwmark {{ routing_table.mark }} table {{ routing_table.name }}"
