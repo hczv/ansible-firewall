@@ -3,3 +3,5 @@ nftables_config_path: "/etc/nftables.conf"
 nftables_url_dependencies:
   - jq
   - cron
+nftables_routing_table_dependencies:
+  - iproute2

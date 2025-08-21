@@ -28,6 +28,19 @@ add rule ip filter forward ct state vmap { established: accept, related: accept,
 
 {% endmacro %}
 
+{% macro create_chain(chain) %}
+# Chain: {{ chain.name }}
+add chain ip filter {{ chain.name }} { type {{ chain.type }} hook {{ chain.hook }} priority {{ chain.priority }}; policy {{ chain.policy }}; }
+{% if chain.state is defined %}
+{% if chain.state.accept_loopback is defined and chain.state.accept_loopback %}
+add rule ip filter {{ chain.name }} iifname "lo" accept
+{% endif %}
+{% if chain.state.established is defined and chain.state.related is defined and chain.state.invalid is defined %}
+add rule ip filter {{ chain.name }} ct state vmap { established: {{ chain.state.established }}, related: {{ chain.state.related }}, invalid: {{ chain.state.invalid }} }
+{% endif %}
+{% endif %}
+{% endmacro %}
+
 {% macro create_zone(zone) -%}
 # Zone: {{ zone.name }}
 # Define interface set

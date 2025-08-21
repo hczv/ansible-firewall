@@ -6,3 +6,5 @@ nftables_config_path: "/etc/sysconfig/nftables.conf"
 nftables_url_dependencies:
   - jq
   - cronie
+nftables_routing_table_dependencies:
+  - iproute

@@ -12,6 +12,12 @@
   ansible.builtin.import_tasks: "nftables_sets_urls.yml"
   when: nftables_sets | selectattr('urls', 'defined') | count > 0
 
+- name: Ensure nftables_routing_tables
+  ansible.builtin.import_tasks: "nftables_routing_tables.yml"
+  when:
+    - nftables_routing_tables is defined
+    - nftables_routing_tables | count > 0
+
 - name: Install nftables
   ansible.builtin.package:
     name: nftables
@@ -32,6 +38,17 @@
   loop: >-
     {{ (nftables_config_files.files | sort(attribute="mtime"))[:-2] }}
 
+- name: Ensure routing is possible
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: 1
+    state: present
+    reload: yes
+  when:
+    - nftables_forward_rules is defined
+    - nftables_forward_rules | count > 0
+
+
 - name: Create nftables configuration for {{ inventory_hostname }}
   ansible.builtin.template:
     src: nftables.conf.j2
@@ -41,6 +58,13 @@
     validate: "/usr/bin/env nft -cf %s"
   notify:
     - Restart nftables service
+
+- name: Enable nftables
+  ansible.builtin.service:
+    name: "nftables"
+    state: started
+    enabled: true
+
 
 - name: Restart nftables if needed
   ansible.builtin.meta: flush_handlers

@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Bash strict mode: https://github.com/guettli/bash-strict-mode
+set -eo pipefail
+trap 'echo -e "\n Error: A command has failed. Exiting the script. Last command was: $BASH_COMMAND"; exit 1' ERR
+
+
+function log() {
+    local LOG_TIMESTAMP
+    LOG_TIMESTAMP=$(date --iso-8601=seconds)
+    echo -e "${LOG_TIMESTAMP}: ${1}" >&2
+}
+
+function rule_exists() {
+    local fwmark=$1
+    local table=$2
+    # Check if the rule is already present in ip rules
+    if ip rule list | grep -q "fwmark $fwmark lookup $table"; then
+        log "Rule 'fwmark $fwmark lookup $table' already exists."
+        return 0
+    else
+        log "Rule 'fwmark $fwmark lookup $table' does not exist."
+        return 1
+    fi
+}
+
+log "Adding ip rules"
+
+{% for routing_table in nftables_routing_tables | default([]) %}
+if rule_exists 0x{{ routing_table.mark }} {{ routing_table.name }}; then
+    log "Rule  {{ routing_table.mark }}/{{ routing_table.name }} already exists, skipping addition."
+else
+    log "ip rule add fwmark {{ routing_table.mark }} table {{ routing_table.name }}"
+    ip rule add fwmark {{ routing_table.mark }} table {{ routing_table.name }}
+fi
+{% endfor %}
