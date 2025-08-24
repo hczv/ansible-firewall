@@ -34,7 +34,7 @@
 
 - name: Create configuration file
   ansible.builtin.template:
-    src: dnsmasq.j2
+    src: dnsmasq.conf.j2
     dest: /etc/dnsmasq.conf
     owner: root
     group: root
