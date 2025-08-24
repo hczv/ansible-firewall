@@ -1,0 +1,5 @@
+---
+
+dnsmasq_requirements:
+  - dnsmasq
+  - iproute2

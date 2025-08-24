@@ -1,0 +1,55 @@
+---
+
+- name: Include OS vars
+  ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
+
+- name: Install dnsmasq
+  become: true
+  ansible.builtin.package:
+    name: "{{ dnsmasq_requirements }}"
+    state: present
+
+- name: Create logrotate file
+  ansible.builtin.copy:
+    src: "dnsmasq.logrotate"
+    dest: /etc/logrotate.d/dnsmasq
+    owner: root
+    group: root
+    mode: 0644
+  when: dnsmasq_logging.log_queries
+
+- name: Find old dnsmasq.conf files
+  ansible.builtin.find:
+    paths: /etc
+    patterns: "dnsmasq.conf.[0-9]*"
+    recurse: false
+  register: dnsmasq_conf_files
+
+- name: Delete old dnsmasq.conf files
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: >-
+    {{ (dnsmasq_conf_files.files | sort(attribute="mtime"))[:-2] }}
+
+- name: Create configuration file
+  ansible.builtin.template:
+    src: dnsmasq.j2
+    dest: /etc/dnsmasq.conf
+    owner: root
+    group: root
+    mode: 0644
+    backup: true
+    validate: "dnsmasq --test --conf-file=%s"
+  notify:
+    - restart dnsmasq
+
+- name: Restart dnsmasq if needed
+  ansible.builtin.meta: flush_handlers
+
+- name: Ensure dnsmasq is enabled on boot
+  become: true
+  ansible.builtin.service:
+    name: dnsmasq
+    enabled: true
+    state: started

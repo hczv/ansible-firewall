@@ -1,0 +1,268 @@
+#jinja2: trim_blocks: True, lstrip_blocks: True
+# {{ ansible_managed }}
+
+port={{ dnsmasq_global.port }}
+
+# If you want dnsmasq to change uid and gid to something other
+# than the default, edit the following lines.
+{% if dnsmasq_global.user is defined and
+      dnsmasq_global.user | string | length > 0 %}
+user={{ dnsmasq_global.user }}
+{% endif %}
+{% if dnsmasq_global.group is defined and
+      dnsmasq_global.group | string | length > 0 %}
+group={{ dnsmasq_global.group }}
+{% endif %}
+{% if dnsmasq_global.filterwin2k is defined and
+      dnsmasq_global.filterwin2k %}
+# Uncomment this to filter useless windows-originated DNS requests
+# which can trigger dial-on-demand links needlessly.
+# Note that (amongst other things) this blocks all SRV requests,
+# so don't use it if you use eg Kerberos, SIP, XMMP or Google-talk.
+# This option only affects forwarding, SRV records originating for
+# dnsmasq (via srv-host= lines) are not suppressed by it.
+filterwin2k
+{% endif %}
+{% if dnsmasq_global.resolv_file is defined and
+      dnsmasq_global.resolv_file | string | length > 0 %}
+# Change this line if you want dns to get its upstream servers from
+# somewhere other that /etc/resolv.conf
+resolv-file={{ dnsmasq_global.resolv_file }}
+{% endif %}
+{% if dnsmasq_global.strict_order is defined and
+      dnsmasq_global.strict_order %}
+# By  default,  dnsmasq  will  send queries to any of the upstream
+# servers it knows about and tries to favour servers to are  known
+# to  be  up.  Uncommenting this forces dnsmasq to try each query
+# with  each  server  strictly  in  the  order  they   appear   in
+# /etc/resolv.conf
+strict-order
+{% endif %}
+{% if not dnsmasq_global.no_hosts %}
+no-hosts
+{% endif %}
+{% if not dnsmasq_global.no_resolv %}
+no-resolv
+{% endif %}
+{% if not dnsmasq_global.no_poll %}
+no-poll
+{% endif %}
+{% if dnsmasq_global.domain_needed %}
+domain-needed
+{% endif %}
+{% if dnsmasq_global.bogus_priv %}
+bogus-priv
+{% endif %}
+{% if dnsmasq_global.cache_size is defined and
+      dnsmasq_global.cache_size | string | length > 0 %}
+cache-size={{ dnsmasq_global.cache_size }}
+{% endif %}
+{% if dnsmasq_global.max_cache_ttl is defined and
+      dnsmasq_global.max_cache_ttl | string | length > 0 %}
+max-cache-ttl={{ dnsmasq_global.max_cache_ttl }}
+{% endif %}
+{% if dnsmasq_global.all_servers %}
+all-servers
+{% endif %}
+{% if dnsmasq_global.no_negcache %}
+no-negcache
+{% endif %}
+# Include another lot of configuration options.
+#conf-file=/etc/dnsmasq.more.conf
+conf-dir={{ dnsmasq_config_directory }}/,*.conf
+
+## interfaces
+
+{% if dnsmasq_interfaces.listen_address is defined and
+      dnsmasq_interfaces.listen_address | string | length > 0 %}
+# Or which to listen on by address (remember to include 127.0.0.1 if
+# you use this.)
+listen-address={{ dnsmasq_interfaces.listen_address }}
+{% endif %}
+{% if dnsmasq_interfaces.interfaces is defined and
+      dnsmasq_interfaces.interfaces | count > 0 %}
+
+  {% for item in dnsmasq_interfaces.interfaces %}
+interface={{ item }}
+  {% endfor %}
+{% endif %}
+{% if dnsmasq_interfaces.bind_only is defined and
+      dnsmasq_interfaces.bind_only %}
+bind-interfaces
+{% endif %}
+{% if dnsmasq_interfaces.except_interfaces is defined and
+      dnsmasq_interfaces.except_interfaces | count > 0 %}
+  {% for item in dnsmasq_interfaces.except_interfaces %}
+except-interface={{ item }}
+  {% endfor %}
+{% endif %}
+
+## logging
+
+{% if dnsmasq_logging.log_queries %}
+log-queries=extra
+log-facility={{ dnsmasq_logging.log_facility }}
+{% endif %}
+{% if dnsmasq_logging.log_dhcp %}
+# Log lots of extra information about DHCP transactions.
+log-dhcp
+{% endif %}
+
+## address
+
+{% if dnsmasq_addresses is defined and
+      dnsmasq_addresses | count > 0 %}
+{%   for item in dnsmasq_addresses %}
+address=/{{ item.get('name') }}/{{ item.get('address') }}
+{%   endfor %}
+{% endif %}
+
+## dhcp
+
+{% if dnsmasq_dhcp.enabled %}
+dhcp-client-update
+  {% if dnsmasq_dhcp.dhcp_boot is defined and
+        dnsmasq_dhcp.dhcp_boot | string | length > 0 %}
+dhcp-boot={{ dnsmasq_dhcp.dhcp_boot  }}
+  {% endif %}
+  {% if dnsmasq_dhcp.dhcp_hosts is defined and
+        dnsmasq_dhcp.dhcp_hosts | count > 0 %}
+    {% for item in dnsmasq_dhcp.dhcp_hosts %}
+dhcp-host={{ item.mac_address | join(',') }}{% if item.name is defined %},{{ item.name }}.{{ dnsmasq_domain }}{% endif %}{% if item.address is defined %},{{ item.address }}{% endif %}{% if item.lease_time is defined %},{{ item.lease_time }}{% endif %}
+    {% endfor %}
+  {% endif %}
+  {% if dnsmasq_dhcp.dhcp_options is defined and
+        dnsmasq_dhcp.dhcp_options | count > 0 %}
+    {% for item in dnsmasq_dhcp.dhcp_options %}
+dhcp-option=option:{{ item.option }},{{ item.value | join(',') }}
+    {% endfor %}
+  {% endif %}
+  {% if dnsmasq_dhcp.dhcp_options_tagged is defined and
+        dnsmasq_dhcp.dhcp_options_tagged | count > 0 %}
+    {% for item in dnsmasq_dhcp.dhcp_options_tagged %}
+dhcp-option=tag:{{ item.tag }},option:{{ item.option }},{{ item.value | join(',') }}
+    {% endfor %}
+  {% endif %}
+  {% if dnsmasq_dhcp.dhcp_range is defined and
+        dnsmasq_dhcp.dhcp_range | count > 0 %}
+    {% for item in dnsmasq_dhcp.dhcp_range %}
+dhcp-range={% if item.set is defined %}set:{{ item.set }},{% endif %}{{ item.start }},{{ item.end }},{{ item.netmask }}{% if item.lease_time is defined %},{{ item.lease_time }}{% endif %}
+    {% endfor %}
+  {% endif %}
+{% endif %}
+{% if dnsmasq_dhcp.dhcp_authoritative %}
+dhcp-authoritative
+{% endif %}
+
+## domain
+
+{% if dnsmasq_domain.name is defined %}
+domain={{ dnsmasq_domain.name }}
+{% endif %}
+
+{% if dnsmasq_domain.custom is defined and
+      dnsmasq_domain.custom | count > 0 %}
+  {% for item in dnsmasq_domain.custom %}
+domain={{ item.get('domain') }},{{ item.get('network') | join (',') }}
+  {% endfor %}
+{% endif %}
+
+## host
+
+{% if dnsmasq_host is defined and
+      dnsmasq_host | count > 0 %}
+{% for item in dnsmasq_host %}
+host-record={{ item.get('host') }},{{ item.get('ip') }}
+{% endfor %}
+{% endif %}
+
+{% if dnsmasq_hostnames is defined and
+      dnsmasq_hostnames | count > 0 %}
+{% for item in dnsmasq_hostnames %}
+host-record={{ item.get('host') }},{{ item.get('ip') }}
+{% endfor %}
+{% endif %}
+
+## local
+
+{% if dnsmasq_local_blocklist is defined and dnsmasq_local_blocklist | count > 0 %}
+{% for item in dnsmasq_local_blocklist %}
+local=/{{ item }}/
+{% endfor %}
+{% endif %}
+
+## nftset
+
+{% if nftables_dnsmasq_sets is defined and nftables_dnsmasq_sets | count > 0 %}
+{% for item in nftables_dnsmasq_sets %}
+{% if item.hosts is defined %}
+nftset=/{{ item.hosts | join("/") }}/4#ip#filter#{{ item.name }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+## server
+
+{% if dnsmasq_server.forwarders is defined and
+      dnsmasq_server.forwarders | count > 0 %}
+  {% for item in dnsmasq_server.forwarders %}
+server=/{{ item.domain }}/{{ item.address }}
+  {% endfor %}
+{% endif %}
+
+{% if dnsmasq_server.nameservers is defined and
+      dnsmasq_server.nameservers | count > 0 %}
+  {% for item in dnsmasq_server.nameservers %}
+server={{ item }}
+  {% endfor %}
+{% endif %}
+
+## tftp
+
+{% if dnsmasq_tftp.enable is defined and
+      dnsmasq_tftp.enable %}
+enable-tftp
+  {% if dnsmasq_tftp.tftp_root is defined and
+        dnsmasq_tftp.tftp_root | string | length > 0 %}
+tftp-root={{ dnsmasq_tftp.tftp_root }}
+  {% endif %}
+  {% if dnsmasq_tftp.tftp_no_fail is defined and
+        dnsmasq_tftp.tftp_no_fail %}
+# Do not abort if the tftp-root is unavailable
+tftp-no-fail
+  {% endif %}
+  {% if dnsmasq_tftp.tftp_secure is defined and
+        dnsmasq_tftp.tftp_secure %}
+# Make the TFTP server more secure: with this set, only files owned by
+# the user dnsmasq is running as will be send over the net.
+tftp-secure
+  {% endif %}
+  {% if dnsmasq_tftp.tftp_no_blocksize is defined and
+        dnsmasq_tftp.tftp_no_blocksize %}
+# This option stops dnsmasq from negotiating a larger blocksize for TFTP
+# transfers. It will slow things down, but may rescue some broken TFTP
+# clients.
+tftp-no-blocksize
+  {% endif %}
+{% endif %}
+
+## cname
+
+{% if dnsmasq_records.cname is defined and
+      dnsmasq_records.cname | count > 0 %}
+  {% for item in dnsmasq_records.cname %}
+    {% set cnames = item.cnames | join(',') %}
+cname={{ cnames }},{{ item.target }}{{ ',' if item.ttl is defined else '' }}{{ item.ttl | default('') }}
+  {% endfor %}
+{% endif %}
+
+## ptr
+
+{% if dnsmasq_hostnames is defined and
+      dnsmasq_hostnames | count > 0 %}
+{% for item in dnsmasq_hostnames %}
+ptr-record={{ item.ip.split('.')[3] }}.{{ item.ip.split('.')[2] }}.{{ item.ip.split('.')[1] }}.{{ item.ip.split('.')[0] }}.in-addr.arpa,{{ item.host }}
+{% endfor %}
+{% endif %}
+
+
