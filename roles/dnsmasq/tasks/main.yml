@@ -51,6 +51,14 @@
   loop: >-
     {{ (dnsmasq_conf_files.files | sort(attribute="mtime"))[:-2] }}
 
+- name: Ensure dnsmasq.d directory exists
+  ansible.builtin.file:
+    path: /etc/dnsmasq.d
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
 - name: Create configuration file
   ansible.builtin.template:
     src: dnsmasq.conf.j2
