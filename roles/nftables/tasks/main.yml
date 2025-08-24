@@ -1,4 +1,4 @@
----
+#---
 - name: Include OS vars
   ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
 
@@ -52,7 +52,7 @@
 
 - name: Create nftables configuration for {{ inventory_hostname }}
   ansible.builtin.template:
-    src: nftables.conf.j2
+    src: nftables_rules.j2
     dest: "{{ nftables_config_path }}"
     mode: "u=rw,g=r,o=r"
     backup: true

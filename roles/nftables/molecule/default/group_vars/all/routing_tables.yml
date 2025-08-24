@@ -1,0 +1,5 @@
+---
+#nftables_routing_tables:
+#  - name: pbr
+#    id: 123
+#    mark: 0x2

@@ -1,0 +1,12 @@
+nftables_rules_postrouting:
+  - name: NAT outbound traffic
+    chain: postrouting
+    operations:
+      - masquerade: true
+    sources:
+      - zone: lan
+        subnets: true
+    destinations:
+      - zone: wan
+        sets:
+          - any

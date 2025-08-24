@@ -1,0 +1,180 @@
+#jinja2: lstrip_blocks: True
+{% import "functions.j2" as functions with context %}
+
+{# ========== Operation Renderer ========== #}
+{% macro render_operation(op) -%}
+  {%- if op.ct_mark_set is defined -%}
+    ct mark set {{ op.ct_mark_set }}
+  {%- elif op.meta_mark_set is defined -%}
+    meta mark set {{ op.meta_mark_set }}
+  {%- elif op.dnat_to is defined -%}
+    dnat to {{ op.dnat_to }}
+  {%- elif op.snat_to is defined -%}
+    snat to {{ op.snat_to }}
+  {%- elif op.masquerade is defined and op.masquerade -%}
+    masquerade
+  {%- elif op.log is defined -%}
+    log prefix "{{ op.log }}"
+  {%- elif op.action is defined -%}
+    {{ op.action }}
+  {%- else -%}
+    accept
+  {%- endif -%}
+{%- endmacro %}
+
+{# ========== Rule Renderer ========== #}
+{% macro create_rule(rule, src_zone, dst_zone, src_set, dst_set) %}
+{%- set protocols = rule.protocols if rule.protocols is defined else {} %}
+{%- set operations = rule.operations | default([{'action': rule.action | default('accept')}]) %}
+
+{# With destination ports #}
+{%- if protocols %}
+  {%- for proto, dst_ports in protocols.items() %}
+    {%- for op in operations %}
+add rule ip filter {{ rule.chain }}
+      {%- if src_zone %} iifname @{{ src_zone }}_ifaces{% endif -%}
+      {%- if dst_zone %} oifname @{{ dst_zone }}_ifaces{% endif -%}
+      {%- if src_set %} ip saddr @{{ src_set }}{% endif -%}
+      {%- if dst_set %} ip daddr @{{ dst_set }}{% endif -%}
+{##} {{ proto }}
+      {%- if proto == 'icmp' and dst_ports | length >= 1 %} type {% else %} dport {% endif -%}
+      {%- if dst_ports | length > 1 %} { {{ dst_ports | join(', ') }} }{% else %} {{ dst_ports[0] }}{% endif %}
+{##} counter {{ render_operation(op) }} comment "{{ rule.name | default('unspecified', true) }}"
+    {% endfor %}
+  {%- endfor %}
+
+{# Without destination ports #}
+{%- else %}
+  {%- for op in operations %}
+add rule ip filter {{ rule.chain }}
+    {%- if src_zone %} iifname @{{ src_zone }}_ifaces {% endif -%}
+    {%- if dst_zone %} oifname @{{ dst_zone }}_ifaces {% endif -%}
+    {%- if src_set %} ip saddr @{{ src_set }} {% endif -%}
+    {%- if dst_set %} ip daddr @{{ dst_set }} {% endif -%}
+{##} counter {{ render_operation(op) }} comment "{{ rule.name | default('unspecified', true) }}"
+  {% endfor %}
+{%- endif %}
+{% endmacro %}
+
+{# ========== Variant Builder ========== #}
+{% macro build_variants(rule) %}
+  {%- set variants = [] %}
+  {%- for source in rule.sources | default([{}]) %}
+    {%- for destination in rule.destinations | default([{}]) %}
+      {%- for src_set in source.sets | default([]) %}
+        {%- for dst_set in destination.sets | default([]) %}
+          {% set _ = variants.append({
+            'src_zone': source.zone | default(none),
+            'dst_zone': destination.zone | default(none),
+            'src_set': src_set,
+            'dst_set': dst_set
+          }) %}
+        {%- endfor %}
+        {%- if destination.subnets is defined and destination.subnets %}
+          {% set _ = variants.append({
+            'src_zone': source.zone | default(none),
+            'dst_zone': destination.zone | default(none),
+            'src_set': src_set,
+            'dst_set': destination.zone ~ '_subnets',
+          }) %}
+        {%- endif %}
+      {%- endfor %}
+
+      {%- if source.subnets is defined and source.subnets %}
+        {%- for dst_set in destination.sets | default([]) %}
+          {% set _ = variants.append({
+            'src_zone': source.zone | default(none),
+            'dst_zone': destination.zone | default(none),
+            'src_set': source.zone ~ '_subnets',
+            'dst_set': dst_set
+          }) %}
+        {%- endfor %}
+        {%- if destination.subnets is defined and destination.subnets %}
+          {% set _ = variants.append({
+            'src_zone': source.zone | default(none),
+            'dst_zone': destination.zone | default(none),
+            'src_set': source.zone ~ '_subnets',
+            'dst_set': destination.zone ~ '_subnets'
+          }) %}
+        {%- endif %}
+      {%- endif %}
+    {%- endfor %}
+    {%- if rule.destinations is not defined or rule.destinations | count < 1 %}
+        {%- for src_set in source.sets | default([]) %}
+          {% set _ = variants.append({
+            'src_zone': source.zone | default(none),
+            'dst_zone': none,
+            'src_set': src_set,
+            'dst_set': none
+          }) %}
+        {%- endfor %}
+        {%- if source.subnets is defined and source.subnets %}
+          {% set _ = variants.append({
+            'src_zone': source.zone | default(none),
+            'dst_zone': none,
+            'src_set': source.zone ~ '_subnets',
+            'dst_set': none
+          }) %}
+        {%- endif %}
+    {%- endif %}
+  {%- endfor %}
+
+  {%- if variants | length == 0 %}
+    {% set _ = variants.append({
+      'src_zone': rule.zone | default(none),
+      'dst_zone': none,
+      'src_set': none,
+      'dst_set': none
+    }) %}
+  {%- endif %}
+
+  {%- for v in variants %}
+    {{ create_rule(rule, v.src_zone, v.dst_zone, v.src_set, v.dst_set) }}
+  {%- endfor %}
+{% endmacro %}
+
+##############################################
+############ Clear existing rules ############
+##############################################
+flush ruleset
+
+
+#############################################
+############ Add Standard tables ############
+#############################################
+add table ip filter
+
+####################################
+############ Add chains ############
+####################################
+{% for chain in nftables_chains | default([]) -%}
+{{ functions.create_chain(chain) }}
+{% endfor %}
+
+###################################
+############ Add zones ############
+###################################
+{% for zone in nftables_zones | default([]) -%}
+{{ functions.create_zone(zone) }}
+{% endfor %}
+
+###################################
+############ Add sets #############
+###################################
+{% for set in nftables_sets | default([]) -%}
+{{ functions.create_set(set) }}
+{% endfor %}
+
+{% for set in nftables_dnsmasq_sets | default([]) -%}
+{{ functions.create_set(set, true) }}
+{% endfor %}
+
+
+####################################
+############ Add rules #############
+####################################
+{% for rule in nftables_rules %}
+# {{ rule.name }}
+{{ build_variants(rule) }}
+
+{% endfor %}

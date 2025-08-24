@@ -1,0 +1,26 @@
+nftables_rules_forward:
+  - name: Forward lan to internet
+    chain: forward
+    action: accept
+    sources:
+      - zone: lan
+        subnets: true
+    destinations:
+      - zone: wan
+        sets:
+          - any
+
+  - name: Allow lan to lab servers
+    chain: forward
+    action: accept
+    sources:
+      - zone: lan
+        subnets: true
+    destinations:
+      - zone: lab
+        subnets: false
+        sets:
+          - lab_servers
+    destination_ports:
+      tcp:
+        - 22

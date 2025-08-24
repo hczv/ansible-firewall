@@ -14,6 +14,10 @@ nftables_sets_1:
   - name: external_system
     subnets:
       - 192.168.7.7
+  - name: lab_servers
+    subnets:
+      - 10.1.11.2
+      - 10.1.11.3
 
 nftables_dnsmasq_sets:
   - name: external-hosts-example

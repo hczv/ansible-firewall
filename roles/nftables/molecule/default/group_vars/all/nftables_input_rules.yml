@@ -1,0 +1,51 @@
+nftables_rules_input:
+  - name: Allow incoming ssh traffic
+    chain: input
+    action: accept
+    sources:
+      - zone: lan
+        subnets: true
+        sets:
+          - any
+    protocols:
+      tcp:
+        - 22
+
+  - name: allow dns from lan and lab
+    chain: input
+    action: accept
+    sources:
+      - zone: lan
+        subnets: true
+      - zone: lab
+        subnets: true
+    protocols:
+      tcp:
+        - 53
+      udp:
+        - 53
+
+  - name: allow icmp request from lan and lab
+    chain: input
+    action: accept
+    sources:
+      - zone: lan
+        subnets: true
+      - zone: lab
+        subnets: true
+    protocols:
+      icmp:
+        - echo-request
+
+  - name: drop from blocked_ip set
+    chain: input
+    action: accept
+    sources:
+      - zone: lan
+        sets:
+        - blocked_ips
+
+nftables_input_rules_9:
+  - name: default deny
+    chain: input
+    action: reject
