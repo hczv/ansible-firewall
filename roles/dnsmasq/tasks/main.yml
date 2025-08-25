@@ -60,6 +60,16 @@
     group: root
     mode: 0755
 
+- name: Ensure {{ dnsmasq_service }} service file
+  ansible.builtin.template:
+    src: dnsmasq.service.j2
+    dest: "/etc/systemd/system/{{ dnsmasq_service }}.service"
+    owner: root
+    group: root
+    mode: 0755
+  when: dnsmasq_service != 'dnsmasq'
+  notify: systemctl daemon-reload
+
 - name: Create configuration file
   ansible.builtin.template:
     src: dnsmasq.conf.j2
