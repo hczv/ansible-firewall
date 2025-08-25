@@ -101,7 +101,7 @@ except-interface={{ item }}
 
 {% if dnsmasq_logging.log_queries %}
 log-queries=extra
-log-facility={{ dnsmasq_logging.log_facility }}
+log-facility=/var/log/{{ dnsmasq_service }}.log
 {% endif %}
 {% if dnsmasq_logging.log_dhcp %}
 # Log lots of extra information about DHCP transactions.
