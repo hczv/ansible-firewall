@@ -17,14 +17,14 @@
 
 - name: restart service
   ansible.builtin.service:
-    name: dnsmasq
+    name: "{{ dnsmasq_service }}"
     state: restarted
   listen: restart dnsmasq
   when: service_default_state | default('started') == 'started'
 
 - name: reload service
   ansible.builtin.service:
-    name: dnsmasq
+    name: "{{ dnsmasq_service }}"
     state: reloaded
   listen: reload dnsmasq
   when: service_default_state | default('started') == 'started'

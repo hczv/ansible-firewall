@@ -1,5 +1,7 @@
 ---
 
+dnsmasq_service: 'dnsmasq'
+
 dnsmasq_systemd:
   unit:
     after: []

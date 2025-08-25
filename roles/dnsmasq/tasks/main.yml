@@ -5,6 +5,7 @@
 
 - name: merge dnsmasq configuration between defaults and custom
   ansible.builtin.set_fact:
+    dnsmasq_service: "{{ dnsmasq_service | default('dnsmasq') }}"
     dnsmasq_global: "{{ dnsmasq_defaults_global | combine(dnsmasq_global, recursive=True) }}"
     dnsmasq_interfaces: "{{ dnsmasq_defaults_interfaces | combine(dnsmasq_interfaces, recursive=True) }}"
     dnsmasq_logging: "{{ dnsmasq_defaults_logging | combine(dnsmasq_logging, recursive=True) }}"
@@ -40,11 +41,11 @@
 - name: Find old dnsmasq.conf files
   ansible.builtin.find:
     paths: /etc
-    patterns: "dnsmasq.conf.[0-9]*"
+    patterns: "{{ dnsmasq_service }}.conf.[0-9]*"
     recurse: false
   register: dnsmasq_conf_files
 
-- name: Delete old dnsmasq.conf files
+- name: Delete old {{ dnsmasq_service }}.conf files
   ansible.builtin.file:
     path: "{{ item.path }}"
     state: absent
@@ -62,7 +63,7 @@
 - name: Create configuration file
   ansible.builtin.template:
     src: dnsmasq.conf.j2
-    dest: /etc/dnsmasq.conf
+    dest: /etc/{{ dnsmasq_service }}.conf
     owner: root
     group: root
     mode: 0644
@@ -74,9 +75,9 @@
 - name: Restart dnsmasq if needed
   ansible.builtin.meta: flush_handlers
 
-- name: Ensure dnsmasq is enabled on boot
+- name: Ensure {{ dnsmasq_service }} is enabled on boot
   become: true
   ansible.builtin.service:
-    name: dnsmasq
+    name: "{{ dnsmasq_service }}"
     enabled: true
     state: started
