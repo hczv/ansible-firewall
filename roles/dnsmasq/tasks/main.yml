@@ -5,7 +5,6 @@
 
 - name: merge dnsmasq configuration between defaults and custom
   ansible.builtin.set_fact:
-    dnsmasq_service: "{{ dnsmasq_service | default('dnsmasq') }}"
     dnsmasq_global: "{{ dnsmasq_defaults_global | combine(dnsmasq_global, recursive=True) }}"
     dnsmasq_interfaces: "{{ dnsmasq_defaults_interfaces | combine(dnsmasq_interfaces, recursive=True) }}"
     dnsmasq_logging: "{{ dnsmasq_defaults_logging | combine(dnsmasq_logging, recursive=True) }}"
