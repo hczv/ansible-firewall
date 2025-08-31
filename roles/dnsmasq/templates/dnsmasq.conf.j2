@@ -67,6 +67,11 @@ all-servers
 {% if dnsmasq_global.no_negcache %}
 no-negcache
 {% endif %}
+
+{% if dnsmasq_global.filter_AAAA %}
+filter-AAAA
+{% endif %}
+
 # Include another lot of configuration options.
 #conf-file=/etc/dnsmasq.more.conf
 #conf-dir={{ dnsmasq_config_directory }}/,*.conf
