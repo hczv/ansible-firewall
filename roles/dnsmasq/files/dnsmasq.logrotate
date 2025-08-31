@@ -1,4 +1,5 @@
 /var/log/dnsmasq.log
+/var/log/dnsmasq_*.log
 {
         maxsize 20M
         rotate 4
