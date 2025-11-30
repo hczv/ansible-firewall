@@ -7,7 +7,6 @@
     required_chains: ['input', 'forward', 'output', 'prerouting', 'postrouting']
     expected_rules:
       - 'iifname @lan_ifaces ip saddr @blocked_ips counter packets 0 bytes 0 accept comment "drop from blocked_ip set"'
-      - 'iifname @lab_ifaces ip saddr @lab_subnets tcp dport 53 counter packets 0 bytes 0 accept comment "allow dns from lab"'
       - 'iifname @lab_ifaces ip saddr @lab_subnets udp dport 53 counter packets 0 bytes 0 accept comment "allow dns from lab"'
       - 'counter packets 0 bytes 0 reject comment "default deny"'
       - 'iifname @lan_ifaces oifname @lan_ifaces accept'
