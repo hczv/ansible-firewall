@@ -6,29 +6,28 @@
   vars:
     required_chains: ['input', 'forward', 'output', 'prerouting', 'postrouting']
     expected_rules:
+      # forward
+      - 'iifname @lan_ifaces oifname @lan_ifaces accept comment "intrazone traffic lan"'
+      - 'iifname @lab_ifaces oifname @lab_ifaces accept comment "intrazone traffic lab"'
+      - 'iifname @lan_ifaces oifname @wan_ifaces ip saddr @lan_subnets ip daddr @any counter packets 0 bytes 0 accept comment "Forward lan to internet"'
+      - 'iifname @lan_ifaces oifname @lab_ifaces ip saddr @lan_subnets ip daddr @lab_servers tcp dport 22 counter packets 0 bytes 0 accept comment "Allow lan to lab servers"'
+      # input
+      - 'iifname "lo" accept'
+      - 'ct state vmap { invalid : drop, established : accept, related : accept }'
+      - 'iifname @lan_ifaces ip saddr @any tcp dport 22 counter packets 0 bytes 0 accept comment "Allow incoming ssh traffic"'
+      - 'iifname @lan_ifaces ip saddr @lan_subnets tcp dport 22 counter packets 0 bytes 0 accept comment "Allow incoming ssh traffic"'
+      - 'iifname @lan_ifaces ip saddr @lan_subnets tcp dport 53 counter packets 0 bytes 0 accept comment "allow dns from lan and lab"'
+      - 'iifname @lan_ifaces ip saddr @lan_subnets udp dport 53 counter packets 0 bytes 0 accept comment "allow dns from lan and lab"'
+      - 'iifname @lab_ifaces ip saddr @lab_subnets tcp dport 53 counter packets 0 bytes 0 accept comment "allow dns from lan and lab"'
+      - 'iifname @lab_ifaces ip saddr @lab_subnets udp dport 53 counter packets 0 bytes 0 accept comment "allow dns from lan and lab"'
+      - 'iifname @lan_ifaces ip saddr @lan_subnets icmp type echo-request counter packets 0 bytes 0 accept comment "allow icmp request from lan and lab"'
+      - 'iifname @lab_ifaces ip saddr @lab_subnets icmp type echo-request counter packets 0 bytes 0 accept comment "allow icmp request from lan and lab"'
       - 'iifname @lan_ifaces ip saddr @blocked_ips counter packets 0 bytes 0 accept comment "drop from blocked_ip set"'
-      - 'iifname @lab_ifaces ip saddr @lab_subnets udp dport 53 counter packets 0 bytes 0 accept comment "allow dns from lab"'
-      - 'counter packets 0 bytes 0 reject comment "default deny"'
-      - 'iifname @lan_ifaces oifname @lan_ifaces accept'
-      - 'iifname @lab_ifaces oifname @lab_ifaces accept'
-      - 'iifname @lan_ifaces oifname @wan_ifaces ip saddr @external-hosts-example ip daddr @wan_ip tcp dport 22 counter packets 0 bytes 0 accept comment "forward rule"'
-      - 'iifname @lan_ifaces oifname @wan_ifaces ip saddr @wan_ip ip daddr @wan_ip tcp dport 22 counter packets 0 bytes 0 accept comment "forward rule"'
-      - 'iifname @lan_ifaces oifname @wan_ifaces ip saddr @lan_subnets ip daddr @wan_ip tcp dport 22 counter packets 0 bytes 0 accept comment "forward rule"'
-      - 'iifname @lan_ifaces oifname @wan_ifaces ip saddr @external-hosts-example ip daddr @external-hosts-example tcp dport 22 counter packets 0 bytes 0 accept comment "forward rule"'
-      - 'iifname @lan_ifaces oifname @wan_ifaces ip saddr @wan_ip ip daddr @external-hosts-example tcp dport 22 counter packets 0 bytes 0 accept comment "forward rule"'
-      - 'iifname @lan_ifaces oifname @wan_ifaces ip saddr @lan_subnets ip daddr @external-hosts-example tcp dport 22 counter packets 0 bytes 0 accept comment "forward rule"'
-      - 'iifname @lan_ifaces oifname @lab_ifaces ip saddr @external-hosts-example ip daddr @lab_subnets tcp dport 22 counter packets 0 bytes 0 accept comment "forward rule"'
-      - 'iifname @lan_ifaces oifname @lab_ifaces ip saddr @wan_ip ip daddr @lab_subnets tcp dport 22 counter packets 0 bytes 0 accept comment "forward rule"'
-      - 'iifname @lan_ifaces oifname @lab_ifaces ip saddr @lan_subnets ip daddr @lab_subnets tcp dport 22 counter packets 0 bytes 0 accept comment "forward rule"'
-      - 'iifname @lan_ifaces oifname @wan_ifaces ip saddr @external-hosts-example ip daddr @wan_ip counter packets 0 bytes 0 accept comment "forward rule without destination ports"'
-      - 'iifname @lan_ifaces oifname @wan_ifaces ip saddr @wan_ip ip daddr @wan_ip counter packets 0 bytes 0 accept comment "forward rule without destination ports"'
-      - 'iifname @lan_ifaces oifname @wan_ifaces ip saddr @lan_subnets ip daddr @wan_ip counter packets 0 bytes 0 accept comment "forward rule without destination ports"'
-      - 'iifname @lan_ifaces oifname @wan_ifaces ip saddr @external-hosts-example ip daddr @external-hosts-example counter packets 0 bytes 0 accept comment "forward rule without destination ports"'
-      - 'iifname @lan_ifaces oifname @wan_ifaces ip saddr @wan_ip ip daddr @external-hosts-example counter packets 0 bytes 0 accept comment "forward rule without destination ports"'
-      - 'iifname @lan_ifaces oifname @wan_ifaces ip saddr @lan_subnets ip daddr @external-hosts-example counter packets 0 bytes 0 accept comment "forward rule without destination ports"'
-      - 'iifname @lan_ifaces oifname @lab_ifaces ip saddr @external-hosts-example ip daddr @lab_subnets counter packets 0 bytes 0 accept comment "forward rule without destination ports"'
-      - 'iifname @lan_ifaces oifname @lab_ifaces ip saddr @wan_ip ip daddr @lab_subnets counter packets 0 bytes 0 accept comment "forward rule without destination ports"'
-      - 'iifname @lan_ifaces oifname @lab_ifaces ip saddr @lan_subnets ip daddr @lab_subnets counter packets 0 bytes 0 accept comment "forward rule without destination ports"'
+      # postrouting
+      - 'iifname @lan_ifaces oifname @wan_ifaces ip saddr @lan_subnets ip daddr @any counter packets 0 bytes 0 masquerade comment "NAT outbound traffic"'
+      # prerouting
+      - 'iifname @lan_ifaces oifname @wan_ifaces ip saddr @lan_subnets ip daddr @any tcp dport { 80, 443 } counter packets 0 bytes 0 ct mark set 0x00000002 comment "HTTP policy routing"'
+      - 'iifname @lan_ifaces oifname @wan_ifaces ip saddr @lan_subnets ip daddr @any tcp dport { 80, 443 } counter packets 0 bytes 0 meta mark set ct mark comment "HTTP policy routing"'
 
   tasks:
     - name: Get nftables ruleset
