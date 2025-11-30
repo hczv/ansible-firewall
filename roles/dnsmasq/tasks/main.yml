@@ -3,7 +3,7 @@
 - name: Include OS vars
   ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
 
-- name: merge dnsmasq configuration between defaults and custom
+- name: Merge dnsmasq configuration between defaults and custom
   ansible.builtin.set_fact:
     dnsmasq_global: "{{ dnsmasq_defaults_global | combine(dnsmasq_global, recursive=True) }}"
     dnsmasq_interfaces: "{{ dnsmasq_defaults_interfaces | combine(dnsmasq_interfaces, recursive=True) }}"
