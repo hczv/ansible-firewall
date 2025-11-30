@@ -54,5 +54,3 @@ dnsmasq_records:
   ptr: []
   srv: []
   txt: []
-
-
