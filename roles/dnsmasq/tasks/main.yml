@@ -34,7 +34,7 @@
     dest: /etc/logrotate.d/dnsmasq
     owner: root
     group: root
-    mode: 0644
+    mode: "0644"
   when: dnsmasq_logging.log_queries
 
 - name: Find old dnsmasq.conf files
@@ -57,7 +57,7 @@
     state: directory
     owner: root
     group: root
-    mode: 0755
+    mode: "0755"
 
 - name: Ensure {{ dnsmasq_service }} service file
   ansible.builtin.template:
@@ -65,7 +65,7 @@
     dest: "/etc/systemd/system/{{ dnsmasq_service }}.service"
     owner: root
     group: root
-    mode: 0755
+    mode: "0755"
   when: dnsmasq_service != 'dnsmasq'
   notify: systemctl daemon-reload
 
@@ -75,7 +75,7 @@
     dest: /etc/{{ dnsmasq_service }}.conf
     owner: root
     group: root
-    mode: 0644
+    mode: "0644"
     backup: true
     validate: "dnsmasq --test --conf-file=%s"
   notify:

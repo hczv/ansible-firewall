@@ -43,7 +43,7 @@ nftables_rules_input:
     sources:
       - zone: lan
         sets:
-        - blocked_ips
+          - blocked_ips
 
 nftables_input_rules_9:
   - name: default deny
