@@ -69,6 +69,28 @@
   when: dnsmasq_service != 'dnsmasq'
   notify: systemctl daemon-reload
 
+# only create override file for native dnsmasq service
+- name: Ensure {{ dnsmasq_service }} override directory
+  ansible.builtin.file:
+    state: directory
+    path: /etc/systemd/system/dnsmasq.service.d
+    owner: root
+    group: root
+    mode: "0755"
+  when: dnsmasq_service == 'dnsmasq'
+  notify: systemctl daemon-reload
+
+# only create override file for native dnsmasq service
+- name: Ensure {{ dnsmasq_service }} override service file
+  ansible.builtin.copy:
+    src: dnsmasq.override.conf
+    dest: /etc/systemd/system/dnsmasq.service.d/override.conf
+    owner: root
+    group: root
+    mode: "0755"
+  when: dnsmasq_service == 'dnsmasq'
+  notify: systemctl daemon-reload
+
 - name: Create configuration file
   ansible.builtin.template:
     src: dnsmasq.conf.j2
