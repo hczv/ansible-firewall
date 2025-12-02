@@ -67,7 +67,7 @@
     group: root
     mode: "0755"
   when: dnsmasq_service != 'dnsmasq'
-  notify: systemctl daemon-reload
+  notify: Systemctl daemon-reload
 
 # only create override file for native dnsmasq service
 - name: Ensure {{ dnsmasq_service }} override directory
@@ -78,7 +78,7 @@
     group: root
     mode: "0755"
   when: dnsmasq_service == 'dnsmasq'
-  notify: systemctl daemon-reload
+  notify: Systemctl daemon-reload
 
 # only create override file for native dnsmasq service
 - name: Ensure {{ dnsmasq_service }} override service file
@@ -89,7 +89,7 @@
     group: root
     mode: "0755"
   when: dnsmasq_service == 'dnsmasq'
-  notify: systemctl daemon-reload
+  notify: Systemctl daemon-reload
 
 - name: Create configuration file
   ansible.builtin.template:
