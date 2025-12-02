@@ -2,7 +2,7 @@
 namespace: hczv
 name: firewall
 readme: README.md
-version: 1.0.8
+version: 1.0.9
 authors:
   - Filip Winthereig <hczv@hotmail.dk>
 

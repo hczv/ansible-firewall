@@ -2,9 +2,20 @@
 
 <!-- ignore lint rules that are often triggered by content generated from commits / git-cliff -->
 <!-- markdownlint-disable line-length no-bare-urls ul-style emphasis-style -->
+## [1.0.9](https://github.com/hczv/ansible-firewall/compare/1.0.8..1.0.9) - 2025-12-02
+
+### <!-- 0 -->🚀 Features
+- Reworked var naming by @hczv in [02f0cc4](https://github.com/hczv/ansible-firewall/commit/02f0cc49b68ced3c6d3e6244a252e06c59e1a0d3)
+- PBR logic by @hczv in [#29](https://github.com/hczv/ansible-firewall/pull/29) 
+
+### <!-- 10 -->💼 Other
+- Dnsmasq by @hczv in [#30](https://github.com/hczv/ansible-firewall/pull/30) 
+- Remove redundant text in shell script by @hczv in [836a1e7](https://github.com/hczv/ansible-firewall/commit/836a1e71996ef79a5cdfffc11e9f1ca3cde0d879)
+
 ## [1.0.8](https://github.com/hczv/ansible-firewall/compare/1.0.7..1.0.8) - 2025-08-15
 
 ### <!-- 10 -->💼 Other
+- [release] - 1.0.8 by @github-actions[bot] in [#28](https://github.com/hczv/ansible-firewall/pull/28) 
 - Update nftables_url_script.sh by @hczv in [#27](https://github.com/hczv/ansible-firewall/pull/27) 
 
 ## [1.0.7](https://github.com/hczv/ansible-firewall/compare/1.0.6..1.0.7) - 2025-08-09
