@@ -43,4 +43,3 @@ nftables_chains_postrouting:
     hook: postrouting
     priority: srcnat
     policy: accept
-

@@ -15,6 +15,8 @@
     masquerade
   {%- elif op.log is defined -%}
     log prefix "{{ op.log }}"
+  {%- elif op.redirect is defined -%}
+    redirect to {{ op.redirect }}
   {%- elif op.action is defined -%}
     {{ op.action }}
   {%- else -%}
@@ -118,6 +120,27 @@ add rule ip filter {{ rule.chain }}
         {%- endif %}
     {%- endif %}
   {%- endfor %}
+
+  {%- if rule.sources is not defined or rule.sources | count < 1 %}
+    {%- for destination in rule.destinations | default([{}]) %}
+      {%- for dst_set in destination.sets | default([]) %}
+        {% set _ = variants.append({
+          'src_zone': none,
+          'dst_zone': destination.zone | default(none),
+          'src_set': none,
+          'dst_set': dst_set
+        }) %}
+      {%- endfor %}
+      {%- if destination.subnets is defined and destination.subnets %}
+        {% set _ = variants.append({
+          'src_zone': none,
+          'dst_zone': destination.zone | default(none),
+          'src_set': none,
+          'dst_set': destination.zone ~ '_subnets'
+        }) %}
+      {%- endif %}
+    {%- endfor %}
+  {%- endif %}
 
   {%- if variants | length == 0 %}
     {% set _ = variants.append({

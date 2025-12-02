@@ -21,6 +21,6 @@ nftables_rules_forward:
         subnets: false
         sets:
           - lab_servers
-    destination_ports:
+    protocols:
       tcp:
         - 22

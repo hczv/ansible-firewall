@@ -3,33 +3,68 @@
 set -eo pipefail
 trap 'echo -e "\n Error: A command has failed. Exiting the script. Last command was: $BASH_COMMAND"; exit 1' ERR
 
-
+#
+# Logging function
+#
 function log() {
     local LOG_TIMESTAMP
     LOG_TIMESTAMP=$(date --iso-8601=seconds)
     echo -e "${LOG_TIMESTAMP}: ${1}" >&2
 }
 
+#
+# Check if an ip rule exists
+#
 function rule_exists() {
     local fwmark=$1
     local table=$2
-    # Check if the rule is already present in ip rules
+
     if ip rule list | grep -q "fwmark $fwmark lookup $table"; then
-        log "Rule 'fwmark $fwmark lookup $table' already exists."
         return 0
-    else
-        log "Rule 'fwmark $fwmark lookup $table' does not exist."
-        return 1
     fi
+
+    return 1
 }
 
-log "Adding ip rules"
+#
+# Ensure an ip rule exists, waiting until it does.
+# Retries defined by $retries and $delay seconds.
+#
+function ensure_rule() {
+    local fwmark=$1
+    local table=$2
+    local retries=20
+    local delay=1
+    local attempt=1
+
+    while true; do
+        if rule_exists "$fwmark" "$table"; then
+            log "Rule '$fwmark/$table' confirmed present."
+            return 0
+        fi
+
+        if (( attempt > retries )); then
+            log "ERROR: Rule '$fwmark/$table' could not be ensured after $retries attempts."
+            return 1
+        fi
+
+        log "Rule '$fwmark/$table' not found. Attempt $attempt/$retries: adding..."
+        # ignore error if rule already added by race
+        ip rule add fwmark "$fwmark" table "$table" 2>/dev/null || true
+
+        attempt=$((attempt + 1))
+        sleep "$delay"
+    done
+}
+
+
+#
+# Main
+#
+log "Ensuring ip rules..."
 
 {% for routing_table in nftables_routing_tables | default([]) %}
-if rule_exists {{ routing_table.mark }} {{ routing_table.name }}; then
-    log "Rule  {{ routing_table.mark }}/{{ routing_table.name }} already exists, skipping addition."
-else
-    log "ip rule add fwmark {{ routing_table.mark }} table {{ routing_table.name }}"
-    ip rule add fwmark {{ routing_table.mark }} table {{ routing_table.name }}
-fi
+ensure_rule {{ routing_table.mark }} {{ routing_table.name }}
 {% endfor %}
+
+log "Done ensuring ip rules"

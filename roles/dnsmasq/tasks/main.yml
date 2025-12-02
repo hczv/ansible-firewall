@@ -1,0 +1,114 @@
+---
+
+- name: Include OS vars
+  ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
+
+- name: Merge dnsmasq configuration between defaults and custom
+  ansible.builtin.set_fact:
+    dnsmasq_global: "{{ dnsmasq_defaults_global | combine(dnsmasq_global, recursive=True) }}"
+    dnsmasq_interfaces: "{{ dnsmasq_defaults_interfaces | combine(dnsmasq_interfaces, recursive=True) }}"
+    dnsmasq_logging: "{{ dnsmasq_defaults_logging | combine(dnsmasq_logging, recursive=True) }}"
+    dnsmasq_addresses: "{{ dnsmasq_defaults_addresses | union(dnsmasq_addresses) }}"
+    dnsmasq_alias: "{{ dnsmasq_defaults_alias | combine(dnsmasq_alias, recursive=True) }}"
+    dnsmasq_dhcp: "{{ dnsmasq_defaults_dhcp | combine(dnsmasq_dhcp, recursive=True) }}"
+    dnsmasq_dnssec: "{{ dnsmasq_defaults_dnssec | combine(dnsmasq_dnssec, recursive=True) }}"
+    dnsmasq_domain: "{{ dnsmasq_defaults_domain | combine(dnsmasq_domain, recursive=True) }}"
+    dnsmasq_ipset: "{{ dnsmasq_defaults_ipset | combine(dnsmasq_ipset, recursive=True) }}"
+    dnsmasq_local: "{{ dnsmasq_defaults_local | combine(dnsmasq_local, recursive=True) }}"
+    dnsmasq_mx: "{{ dnsmasq_defaults_mx | combine(dnsmasq_mx, recursive=True) }}"
+    dnsmasq_nftset: "{{ dnsmasq_defaults_nftset | combine(dnsmasq_nftset, recursive=True) }}"
+    dnsmasq_pxe: "{{ dnsmasq_defaults_pxe | combine(dnsmasq_pxe, recursive=True) }}"
+    dnsmasq_server: "{{ dnsmasq_defaults_server | combine(dnsmasq_server, recursive=True) }}"
+    dnsmasq_tftp: "{{ dnsmasq_defaults_tftp | combine(dnsmasq_tftp, recursive=True) }}"
+    dnsmasq_records: "{{ dnsmasq_defaults_records | combine(dnsmasq_records, recursive=True) }}"
+
+- name: Install dnsmasq
+  become: true
+  ansible.builtin.package:
+    name: "{{ dnsmasq_requirements }}"
+    state: present
+
+- name: Create logrotate file
+  ansible.builtin.copy:
+    src: "dnsmasq.logrotate"
+    dest: /etc/logrotate.d/dnsmasq
+    owner: root
+    group: root
+    mode: "0644"
+  when: dnsmasq_logging.log_queries
+
+- name: Find old dnsmasq.conf files
+  ansible.builtin.find:
+    paths: /etc
+    patterns: "{{ dnsmasq_service }}.conf.[0-9]*"
+    recurse: false
+  register: dnsmasq_conf_files
+
+- name: Delete old {{ dnsmasq_service }}.conf files
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: >-
+    {{ (dnsmasq_conf_files.files | sort(attribute="mtime"))[:-2] }}
+
+- name: Ensure dnsmasq.d directory exists
+  ansible.builtin.file:
+    path: /etc/dnsmasq.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure {{ dnsmasq_service }} service file
+  ansible.builtin.template:
+    src: dnsmasq.service.j2
+    dest: "/etc/systemd/system/{{ dnsmasq_service }}.service"
+    owner: root
+    group: root
+    mode: "0755"
+  when: dnsmasq_service != 'dnsmasq'
+  notify: Systemctl daemon-reload
+
+# only create override file for native dnsmasq service
+- name: Ensure {{ dnsmasq_service }} override directory
+  ansible.builtin.file:
+    state: directory
+    path: /etc/systemd/system/dnsmasq.service.d
+    owner: root
+    group: root
+    mode: "0755"
+  when: dnsmasq_service == 'dnsmasq'
+  notify: Systemctl daemon-reload
+
+# only create override file for native dnsmasq service
+- name: Ensure {{ dnsmasq_service }} override service file
+  ansible.builtin.copy:
+    src: dnsmasq.override.conf
+    dest: /etc/systemd/system/dnsmasq.service.d/override.conf
+    owner: root
+    group: root
+    mode: "0755"
+  when: dnsmasq_service == 'dnsmasq'
+  notify: Systemctl daemon-reload
+
+- name: Create configuration file
+  ansible.builtin.template:
+    src: dnsmasq.conf.j2
+    dest: /etc/{{ dnsmasq_service }}.conf
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+    validate: "dnsmasq --test --conf-file=%s"
+  notify:
+    - restart dnsmasq
+
+- name: Restart dnsmasq if needed
+  ansible.builtin.meta: flush_handlers
+
+- name: Ensure {{ dnsmasq_service }} is enabled on boot
+  become: true
+  ansible.builtin.service:
+    name: "{{ dnsmasq_service }}"
+    enabled: true
+    state: started
