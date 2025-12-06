@@ -139,6 +139,7 @@ dhcp-host={{ item.mac_address | join(',') }}{% if item.name is defined %},{{ ite
   {% if dnsmasq_dhcp.dhcp_options is defined and
         dnsmasq_dhcp.dhcp_options | count > 0 %}
     {% for item in dnsmasq_dhcp.dhcp_options %}
+
 dhcp-option=option:{{ item.option }},{{ item.value | join(',') }}
     {% endfor %}
   {% endif %}
