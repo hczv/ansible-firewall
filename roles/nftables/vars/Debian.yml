@@ -5,3 +5,4 @@ nftables_url_dependencies:
   - cron
 nftables_routing_table_dependencies:
   - iproute2
+  - conntrack
