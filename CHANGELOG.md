@@ -2,6 +2,14 @@
 
 <!-- ignore lint rules that are often triggered by content generated from commits / git-cliff -->
 <!-- markdownlint-disable line-length no-bare-urls ul-style emphasis-style -->
+## [1.0.10](https://github.com/hczv/ansible-firewall/compare/1.0.9..1.0.10) - 2025-12-14
+
+### <!-- 10 -->💼 Other
+- Allow uid and gid filtering by @hczv in [#35](https://github.com/hczv/ansible-firewall/pull/35) 
+- Ensure dnsmasq new lines by @hczv in [#34](https://github.com/hczv/ansible-firewall/pull/34) 
+- Ensure that jinja doesnt mangle dnsmasq config by @hczv in [#33](https://github.com/hczv/ansible-firewall/pull/33) 
+- Dnsmasq readme by @hczv in [#32](https://github.com/hczv/ansible-firewall/pull/32) 
+
 ## [1.0.9](https://github.com/hczv/ansible-firewall/compare/1.0.8..1.0.9) - 2025-12-02
 
 ### <!-- 0 -->🚀 Features
@@ -9,6 +17,7 @@
 - PBR logic by @hczv in [#29](https://github.com/hczv/ansible-firewall/pull/29) 
 
 ### <!-- 10 -->💼 Other
+- [release] - 1.0.9 by @github-actions[bot] in [#31](https://github.com/hczv/ansible-firewall/pull/31) 
 - Dnsmasq by @hczv in [#30](https://github.com/hczv/ansible-firewall/pull/30) 
 - Remove redundant text in shell script by @hczv in [836a1e7](https://github.com/hczv/ansible-firewall/commit/836a1e71996ef79a5cdfffc11e9f1ca3cde0d879)
 
