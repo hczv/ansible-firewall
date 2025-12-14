@@ -38,6 +38,8 @@ add rule ip filter {{ rule.chain }}
       {%- if dst_zone %} oifname @{{ dst_zone }}_ifaces{% endif -%}
       {%- if src_set %} ip saddr @{{ src_set }}{% endif -%}
       {%- if dst_set %} ip daddr @{{ dst_set }}{% endif -%}
+      {%- if rule.uid is defined %} meta skuid {{ rule.uid }} {% endif -%}
+      {%- if rule.gid is defined %} meta skgid{{ rule.gid }} {% endif -%}
 {##} {{ proto }}
       {%- if proto == 'icmp' and dst_ports | length >= 1 %} type {% else %} dport {% endif -%}
       {%- if dst_ports | length > 1 %} { {{ dst_ports | join(', ') }} }{% else %} {{ dst_ports[0] }}{% endif %}
@@ -53,6 +55,8 @@ add rule ip filter {{ rule.chain }}
     {%- if dst_zone %} oifname @{{ dst_zone }}_ifaces {% endif -%}
     {%- if src_set %} ip saddr @{{ src_set }} {% endif -%}
     {%- if dst_set %} ip daddr @{{ dst_set }} {% endif -%}
+    {%- if rule.uid is defined %} meta skuid {{ rule.uid }} {% endif -%}
+    {%- if rule.gid is defined %} meta skgid {{ rule.gid }} {% endif -%}
 {##} counter {{ render_operation(op) }} comment "{{ rule.name | default('unspecified', true) }}"
   {% endfor %}
 {%- endif %}

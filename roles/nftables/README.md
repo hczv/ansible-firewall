@@ -173,6 +173,8 @@ Defines the `nftables` rules that will be applied to the remote host.
 Settings:
 *   `name`: A descriptive name for the rule (required).
 *   `chain`: The `nftables` chain to which this rule belongs (required). The chain must be defined in `nftables_chains`.
+*   `uid`: The user ID (`meta skuid`) of the user that generated the traffic to match against (optional).
+*   `gid`: The group ID (`meta skgid`) of the user that generated the traffic to match against (optional).
 *   `operations`: Custom operations to perform on matching traffic (optional). Available operations include:
     *   `redirect`: Redirects traffic to a different destination.
     *   `ct_mark_set`: Sets the connection track mark.
