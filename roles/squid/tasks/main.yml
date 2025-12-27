@@ -1,0 +1,69 @@
+---
+# tasks file for ansible-squid
+- name: Install squid
+  package:
+    name: squid
+    state: present
+
+- name: Install apache2-utils for htpasswd
+  package:
+    name: apache2-utils
+    state: present
+  when: squid_auth_users | length > 0
+
+- name: Create squid password file directory
+  file:
+    path: /etc/squid
+    state: directory
+    mode: '0755'
+
+- name: Create squid password file
+  htpasswd:
+    path: /etc/squid/passwd
+    name: "{{ item.username }}"
+    password: "{{ item.password }}"
+    owner: proxy
+    group: proxy
+    mode: '0640'
+  loop: "{{ squid_auth_users }}"
+  no_log: true
+  when: squid_auth_users | length > 0
+
+- name: Create SSL certificate directory
+  file:
+    path: "{{ squid_ssl_bump_client_cert_dir }}"
+    state: directory
+    mode: '0755'
+  when: squid_ssl_bump_enabled
+
+- name: Create SSL certificate database directory
+  file:
+    path: "{{ squid_ssl_bump_client_cert_db_dir }}"
+    state: directory
+    mode: '0755'
+  when: squid_ssl_bump_enabled
+
+- name: Initialize SSL certificate database
+  command: "/usr/lib/squid/ssl_db_load -create {{ squid_ssl_bump_client_cert_db_dir }}"
+  args:
+    creates: "{{ squid_ssl_bump_client_cert_db_dir }}/certs"
+  when: squid_ssl_bump_enabled
+
+
+
+- name: Include copy certificates tasks
+  include_tasks: copy_certs.yml
+  when: squid_ssl_bump_enabled
+  template:
+    src: squid.conf.j2
+    dest: /etc/squid/squid.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart squid
+
+- name: Ensure squid service is running and enabled
+  service:
+    name: squid
+    state: started
+    enabled: true

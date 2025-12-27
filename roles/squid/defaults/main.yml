@@ -1,0 +1,35 @@
+---
+# defaults file for ansible-squid
+squid_port: 3128
+squid_cache_dir: /var/spool/squid
+squid_cache_size: 10000
+squid_max_object_size: 4096 KB
+squid_max_object_size_in_memory: 512 KB
+squid_auth_users: []
+  # Example:
+  # - username: user1
+  #   password: password1
+  #   whitelist:
+  #     - .whitelisted-domain-for-user1.com
+  #   non_ssl_whitelist:
+  #     - .non-ssl-whitelisted-domain-for-user1.com
+squid_acl_domains: []
+  # Example:
+  # - name: allowed_domains
+  #   domains:
+  #     - .google.com
+  #     - .github.com
+squid_ssl_bump_enabled: false
+squid_ssl_bump_cert_country: "US"
+squid_ssl_bump_cert_state: "Some-State"
+squid_ssl_bump_cert_locality: "Some-City"
+squid_ssl_bump_cert_organization: "Ansible Squid"
+squid_ssl_bump_cert_organizational_unit: "IT"
+squid_ssl_bump_cert_common_name: "Ansible Squid Proxy"
+squid_ssl_bump_cert_path: "/etc/squid/ssl/squid.pem"
+squid_ssl_bump_key_path: "/etc/squid/ssl/squid.key"
+squid_ssl_bump_client_private_key: "/etc/squid/ssl_cert/squid_priv.pem"
+squid_ssl_bump_client_cert: "/etc/squid/ssl_cert/squid_cert.pem"
+squid_ssl_bump_client_cert_dir: "/etc/squid/ssl_cert"
+squid_ssl_bump_client_cert_db_dir: "/var/lib/ssl_db"
+

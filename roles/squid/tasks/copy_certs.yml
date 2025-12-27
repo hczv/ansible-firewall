@@ -1,0 +1,27 @@
+- name: Copy SSL certificate
+  copy:
+    src: "{{ squid_ssl_bump_cert_path }}"
+    dest: "{{ squid_ssl_bump_cert_path }}"
+    mode: '0644'
+  when: squid_ssl_bump_enabled
+
+- name: Copy SSL key
+  copy:
+    src: "{{ squid_ssl_bump_key_path }}"
+    dest: "{{ squid_ssl_bump_key_path }}"
+    mode: '0600'
+  when: squid_ssl_bump_enabled
+
+- name: Copy client SSL certificate
+  copy:
+    src: "{{ squid_ssl_bump_client_cert }}"
+    dest: "{{ squid_ssl_bump_client_cert }}"
+    mode: '0644'
+  when: squid_ssl_bump_enabled
+
+- name: Copy client SSL private key
+  copy:
+    src: "{{ squid_ssl_bump_client_private_key }}"
+    dest: "{{ squid_ssl_bump_client_private_key }}"
+    mode: '0600'
+  when: squid_ssl_bump_enabled

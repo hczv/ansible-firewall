@@ -1,0 +1,119 @@
+#
+# Recommended minimum configuration:
+#
+
+# Example rule allowing access from your local networks.
+# Adapt to your needs.
+acl localnet src 0.0.0.1-0.255.255.255  # RFC 1918 B (private networks)
+acl localnet src 10.0.0.0/8     # RFC 1918 A (private networks)
+acl localnet src 172.16.0.0/12  # RFC 1918 B (private networks)
+acl localnet src 192.168.0.0/16 # RFC 1918 C (private networks)
+acl localnet src fc00::/7       # RFC 4193 local private network range
+acl localnet src fe80::/10      # RFC 4291 link-local (directly plugged) machines
+
+acl SSL_ports port 443
+acl Safe_ports port 80          # http
+acl Safe_ports port 21          # ftp
+acl Safe_ports port 443         # https
+acl Safe_ports port 70          # gopher
+acl Safe_ports port 210         # wais
+acl Safe_ports port 1025-65535  # unregistered ports
+acl Safe_ports port 280         # http-mgmt
+acl Safe_ports port 488         # gss-http
+acl Safe_ports port 591         # filemaker
+acl Safe_ports port 777         # multiling http
+
+acl CONNECT method CONNECT
+
+#
+# Recommended minimum Access Permission configuration:
+#
+# Deny requests to certain unsafe ports
+http_access deny !Safe_ports
+
+# Deny CONNECT to other than SSL ports
+http_access deny CONNECT !SSL_ports
+
+# Only allow cachemgr access from localhost
+http_access allow localhost manager
+http_access deny manager
+
+# We strongly recommend to not allow access to your cache from people outside your local network!
+#
+# Example rule allowing your local "internal" networks, but denying all others access
+http_access allow localnet
+http_access allow localhost
+
+# And finally deny all other access to this proxy
+http_access deny all
+
+# Squid normally listens to port 3128
+http_port {{ squid_port }}
+
+# Leave coredumps in the first cache dir
+coredump_dir {{ squid_cache_dir }}
+
+# Add authentication
+{% if squid_auth_users | length > 0 %}
+auth_param basic program /usr/lib/squid/basic_ncsa_auth /etc/squid/passwd
+auth_param basic children 5 startup=5 idle=1 CPUTimeout=15
+auth_param basic realm Squid proxy-caching web server
+auth_param basic credentialsttl 2 hours
+acl authenticated proxy_auth REQUIRED
+http_access allow authenticated
+{% endif %}
+
+{% for user in squid_auth_users %}
+{% if user.non_ssl_whitelist | length > 0 %}
+acl {{ user.username }}_non_ssl_whitelist dstdomain "{{ user.non_ssl_whitelist | join(' ') }}"
+http_access allow {{ user.username }}_non_ssl_whitelist authenticated
+{% endif %}
+{% endfor %}
+
+# Add domain-based access control
+{% for acl in squid_acl_domains %}
+acl {{ acl.name }} dstdomain "{{ acl.domains | join(' ') }}"
+http_access allow {{ acl.name }} authenticated
+{% endfor %}
+
+# SSL Bumping
+{% if squid_ssl_bump_enabled %}
+http_port {{ squid_port }} ssl-bump cert={{ squid_ssl_bump_cert_path }} key={{ squid_ssl_bump_key_path }} generate-host-certificates=on dynamic_cert_mem_cache_size=4MB
+always_direct allow all
+ssl_bump stare all
+ssl_bump bump all
+sslproxy_cert_error allow all
+sslproxy_flags DONT_VERIFY_PEER
+acl SslBumpCertError ssl_error SQUID_X509_V_ERR_DOMAIN_MISMATCH
+http_access allow SslBumpCertError
+acl step1 at_step SslBump1
+acl step2 at_step SslBump2
+acl step3 at_step SslBump3
+
+# Whitelisting for SSL Bumping
+{% for user in squid_auth_users %}
+{% if user.whitelist | length > 0 %}
+acl {{ user.username }}_whitelist ssl::server_name "{{ user.whitelist | join(' ') }}"
+ssl_bump splice {{ user.username }}_whitelist
+{% endif %}
+{% endfor %}
+
+
+ssl_bump peek step1
+ssl_bump bump step2
+ssl_bump splice step3
+{% endif %}
+
+# We recommend to use the following parameters for a first good experience:
+#
+# cache_mem 256 MB
+# maximum_object_size 4 MB
+# maximum_object_size_in_memory 512 KB
+#
+# cache_dir ufs /var/spool/squid 10000 16 256
+#
+# For more details, see the Squid configuration file documentation.
+#
+cache_dir ufs {{ squid_cache_dir }} {{ squid_cache_size }} 16 256
+maximum_object_size {{ squid_max_object_size }}
+maximum_object_size_in_memory {{ squid_max_object_size_in_memory }}
