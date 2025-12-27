@@ -82,7 +82,6 @@
     fail_msg: "Each item in 'squid_ips' must contain a non-empty 'ips' list"
   loop: "{{ squid_ips }}"
   when: squid_auth_mode == 'ip' and (squid_ips is defined and squid_ips | length > 0)
-- name: Include copy certificates tasks
 
 - name: Include copy certificates tasks
   include_tasks: copy_certs.yml
