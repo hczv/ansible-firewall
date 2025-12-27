@@ -7,7 +7,9 @@
 
 - name: Install apache2-utils for htpasswd
   package:
-    name: apache2-utils
+    name: 
+      - apache2-utils
+      - python3-passlib
     state: present
   when: (squid_users | default([]) | length > 0 or squid_auth_users | default([]) | length > 0) and squid_auth_mode == 'htpasswd'
 
@@ -26,7 +28,6 @@
     path: /etc/squid
     state: directory
     mode: '0755'
-
 - name: Create squid password file
   htpasswd:
     path: "{{ squid_passwd_path }}"
