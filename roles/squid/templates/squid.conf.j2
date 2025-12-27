@@ -4,7 +4,6 @@
 
 # Example rule allowing access from your local networks.
 # Adapt to your needs.
-acl localnet src 0.0.0.1-0.255.255.255  # RFC 1918 B (private networks)
 acl localnet src 10.0.0.0/8     # RFC 1918 A (private networks)
 acl localnet src 172.16.0.0/12  # RFC 1918 B (private networks)
 acl localnet src 192.168.0.0/16 # RFC 1918 C (private networks)
@@ -45,7 +44,7 @@ http_access allow localnet
 http_access allow localhost
 
 # And finally deny all other access to this proxy
-http_access deny all
+
 
 # Squid normally listens to port 3128
 http_port {{ squid_port }}
@@ -53,9 +52,9 @@ http_port {{ squid_port }}
 # Leave coredumps in the first cache dir
 coredump_dir {{ squid_cache_dir }}
 
-# Add authentication
-{% if squid_auth_users | length > 0 %}
-auth_param basic program /usr/lib/squid/basic_ncsa_auth /etc/squid/passwd
+# Add authentication (htpasswd mode)
+{% if squid_auth_mode == 'htpasswd' and ((squid_users | default([])) | length > 0 or (squid_auth_users | default([])) | length > 0) %}
+auth_param basic program {{ squid_basic_ncsa_auth_path }} {{ squid_passwd_path }}
 auth_param basic children 5 startup=5 idle=1 CPUTimeout=15
 auth_param basic realm Squid proxy-caching web server
 auth_param basic credentialsttl 2 hours
@@ -63,17 +62,52 @@ acl authenticated proxy_auth REQUIRED
 http_access allow authenticated
 {% endif %}
 
-{% for user in squid_auth_users %}
-{% if user.non_ssl_whitelist | length > 0 %}
+{# Named domain whitelist lists (new style) #}
+{% for wl in (squid_whitelist_domains | default([])) %}
+acl {{ wl.name }}_dstdomain dstdomain "{{ wl.domains | join(' ') }}"
+acl {{ wl.name }}_servername ssl::server_name "{{ wl.domains | join(' ') }}"
+{% endfor %}
+
+{# Per-user non-SSL whitelists: support new `squid_users` (or legacy `squid_auth_users`) #}
+{% for user in (squid_users | default(squid_auth_users | default([]))) %}
+	{# legacy per-user non-ssl list (explicit domains) #}
+	{% if user.non_ssl_whitelist is defined and user.non_ssl_whitelist | length > 0 %}
 acl {{ user.username }}_non_ssl_whitelist dstdomain "{{ user.non_ssl_whitelist | join(' ') }}"
 http_access allow {{ user.username }}_non_ssl_whitelist authenticated
-{% endif %}
+	{% endif %}
+	{# new-style per-user named whitelists (references to squid_whitelist_domains) #}
+	{% if user.whitelists is defined and user.whitelists | length > 0 %}
+		{% for wlname in user.whitelists %}
+http_access allow {{ wlname }}_dstdomain authenticated
+		{% endfor %}
+	{% endif %}
 {% endfor %}
+
+{# IP-based auth: allow IPs and their referenced whitelist lists #}
+{% if squid_auth_mode == 'ip' %}
+	{% if squid_ip_allowed is defined and squid_ip_allowed | length > 0 %}
+acl ip_allowed src {{ squid_ip_allowed | join(' ') }}
+http_access allow ip_allowed
+	{% endif %}
+	{% for ipset in (squid_ips | default([])) %}
+		{% set idx = loop.index0 %}
+acl ip_entry_{{ idx }} src {{ ipset.ips | join(' ') }}
+		{% if ipset.whitelists is defined and ipset.whitelists | length > 0 %}
+			{% for wlname in ipset.whitelists %}
+http_access allow {{ wlname }}_dstdomain ip_entry_{{ idx }}
+			{% endfor %}
+		{% endif %}
+	{% endfor %}
+{% endif %}
 
 # Add domain-based access control
 {% for acl in squid_acl_domains %}
 acl {{ acl.name }} dstdomain "{{ acl.domains | join(' ') }}"
+{% if squid_auth_mode == 'htpasswd' %}
 http_access allow {{ acl.name }} authenticated
+{% else %}
+http_access allow {{ acl.name }}
+{% endif %}
 {% endfor %}
 
 # SSL Bumping
@@ -91,18 +125,24 @@ acl step2 at_step SslBump2
 acl step3 at_step SslBump3
 
 # Whitelisting for SSL Bumping
-{% for user in squid_auth_users %}
-{% if user.whitelist | length > 0 %}
-acl {{ user.username }}_whitelist ssl::server_name "{{ user.whitelist | join(' ') }}"
-ssl_bump splice {{ user.username }}_whitelist
+{# Splice (do not bump) for named whitelist domain lists when SSL bumping is enabled.
+	 We declare server_name ACLs above and splice them here. This mirrors prior behavior
+	 where per-user whitelist ACLs were used (they were global in effect).
+ #}
+{% if (squid_whitelist_domains | default([])) | length > 0 %}
+	{% for wl in (squid_whitelist_domains | default([])) %}
+ssl_bump splice {{ wl.name }}_servername
+	{% endfor %}
 {% endif %}
-{% endfor %}
 
 
 ssl_bump peek step1
 ssl_bump bump step2
 ssl_bump splice step3
 {% endif %}
+
+# Final default deny — placed after all allow rules
+http_access deny all
 
 # We recommend to use the following parameters for a first good experience:
 #

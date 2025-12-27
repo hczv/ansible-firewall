@@ -33,3 +33,50 @@ squid_ssl_bump_client_cert: "/etc/squid/ssl_cert/squid_cert.pem"
 squid_ssl_bump_client_cert_dir: "/etc/squid/ssl_cert"
 squid_ssl_bump_client_cert_db_dir: "/var/lib/ssl_db"
 
+# System user/group that runs squid (distribution dependent: 'proxy' or 'squid')
+squid_user: proxy
+squid_group: proxy
+
+# Path to squid configuration file
+squid_conf_path: /etc/squid/squid.conf
+
+# Path to basic ncsa auth binary; distribution paths differ (e.g. /usr/lib/squid/basic_ncsa_auth
+# or /usr/libexec/squid/basic_ncsa_auth). Override if needed.
+squid_basic_ncsa_auth_path: /usr/lib/squid/basic_ncsa_auth
+
+# Path to htpasswd file managed by role
+squid_passwd_path: /etc/squid/passwd
+
+# Authentication mode: 'htpasswd' (username/password), 'ip' (source IP ACLs), or 'none'
+squid_auth_mode: htpasswd
+
+# When using `squid_auth_mode: ip` list the allowed source IPs/CIDRs here
+squid_ip_allowed: []
+
+# New-style named domain whitelist lists. Each entry has a `name` and `domains`.
+# Example:
+# squid_whitelist_domains:
+#   - name: update-domains
+#     domains:
+#       - example.com
+#       - example.org
+squid_whitelist_domains: []
+
+# New user/ip structures. These provide a mapping to named whitelist lists.
+# Example:
+# squid_users:
+#   - username: admin
+#     password: secret
+#     whitelists:
+#       - update-domains
+squid_users: []
+
+# Example IP entries:
+# squid_ips:
+#   - ips:
+#       - 1.2.3.4
+#       - 1.2.4.5
+#     whitelists:
+#       - update-domains
+squid_ips: []
+

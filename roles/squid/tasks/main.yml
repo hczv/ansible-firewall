@@ -9,7 +9,17 @@
   package:
     name: apache2-utils
     state: present
-  when: squid_auth_users | length > 0
+  when: (squid_users | default([]) | length > 0 or squid_auth_users | default([]) | length > 0) and squid_auth_mode == 'htpasswd'
+
+- name: Validate auth user entries
+  assert:
+    that:
+      - "item.username is defined"
+      - "item.password is defined"
+    fail_msg: "Each entry in squid_users (or squid_auth_users) must include 'username' and 'password'"
+  loop: "{{ (squid_users | default(squid_auth_users | default([]))) }}"
+  when: (squid_users | default([]) | length > 0 or squid_auth_users | default([]) | length > 0) and squid_auth_mode == 'htpasswd'
+
 
 - name: Create squid password file directory
   file:
@@ -19,15 +29,15 @@
 
 - name: Create squid password file
   htpasswd:
-    path: /etc/squid/passwd
+    path: "{{ squid_passwd_path }}"
     name: "{{ item.username }}"
     password: "{{ item.password }}"
-    owner: proxy
-    group: proxy
+    owner: "{{ squid_user }}"
+    group: "{{ squid_group }}"
     mode: '0640'
-  loop: "{{ squid_auth_users }}"
+  loop: "{{ (squid_users | default(squid_auth_users | default([]))) }}"
   no_log: true
-  when: squid_auth_users | length > 0
+  when: (squid_users | default([]) | length > 0 or squid_auth_users | default([]) | length > 0) and squid_auth_mode == 'htpasswd'
 
 - name: Create SSL certificate directory
   file:
@@ -49,14 +59,39 @@
     creates: "{{ squid_ssl_bump_client_cert_db_dir }}/certs"
   when: squid_ssl_bump_enabled
 
+- name: Validate SSL bump variables
+  assert:
+    that:
+      - squid_ssl_bump_cert_path is defined
+      - squid_ssl_bump_key_path is defined
+    fail_msg: "When squid_ssl_bump_enabled is true you must set 'squid_ssl_bump_cert_path' and 'squid_ssl_bump_key_path'"
+  when: squid_ssl_bump_enabled
 
+- name: Validate IP auth variables
+  assert:
+    that:
+      - (squid_ips is defined and squid_ips | length > 0) or (squid_ip_allowed is defined and squid_ip_allowed | length > 0)
+    fail_msg: "When squid_auth_mode is 'ip' provide either 'squid_ips' (new format) or 'squid_ip_allowed' (legacy)"
+  when: squid_auth_mode == 'ip'
+
+- name: Validate squid_ips item structure (new format)
+  assert:
+    that:
+      - "item.ips is defined"
+      - "item.ips | length > 0"
+    fail_msg: "Each item in 'squid_ips' must contain a non-empty 'ips' list"
+  loop: "{{ squid_ips }}"
+  when: squid_auth_mode == 'ip' and (squid_ips is defined and squid_ips | length > 0)
+- name: Include copy certificates tasks
 
 - name: Include copy certificates tasks
   include_tasks: copy_certs.yml
   when: squid_ssl_bump_enabled
+
+- name: Render squid configuration
   template:
     src: squid.conf.j2
-    dest: /etc/squid/squid.conf
+    dest: "{{ squid_conf_path }}"
     owner: root
     group: root
     mode: '0644'
