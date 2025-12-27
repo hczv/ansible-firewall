@@ -55,7 +55,7 @@ coredump_dir {{ squid_cache_dir }}
 # Add authentication (htpasswd mode)
 {% if squid_auth_mode == 'htpasswd' and ((squid_users | default([])) | length > 0 or (squid_auth_users | default([])) | length > 0) %}
 auth_param basic program {{ squid_basic_ncsa_auth_path }} {{ squid_passwd_path }}
-auth_param basic children 5 startup=5 idle=1 CPUTimeout=15
+auth_param basic children 5 startup=5 idle=1
 auth_param basic realm Squid proxy-caching web server
 auth_param basic credentialsttl 2 hours
 acl authenticated proxy_auth REQUIRED
