@@ -64,15 +64,17 @@ http_access allow authenticated
 
 {# Named domain whitelist lists (new style) #}
 {% for wl in (squid_whitelist_domains | default([])) %}
-acl {{ wl.name }}_dstdomain dstdomain "{{ wl.domains | join(' ') }}"
-acl {{ wl.name }}_servername ssl::server_name "{{ wl.domains | join(' ') }}"
+acl {{ wl.name }}_dstdomain dstdomain {{ wl.domains | join(' ') }}
+{% if squid_ssl_bump_enabled %}
+acl {{ wl.name }}_servername ssl::server_name {{ wl.domains | join(' ') }}
+{% endif %}
 {% endfor %}
 
 {# Per-user non-SSL whitelists: support new `squid_users` (or legacy `squid_auth_users`) #}
 {% for user in (squid_users | default(squid_auth_users | default([]))) %}
 	{# legacy per-user non-ssl list (explicit domains) #}
 	{% if user.non_ssl_whitelist is defined and user.non_ssl_whitelist | length > 0 %}
-acl {{ user.username }}_non_ssl_whitelist dstdomain "{{ user.non_ssl_whitelist | join(' ') }}"
+acl {{ user.username }}_non_ssl_whitelist dstdomain {{ user.non_ssl_whitelist | join(' ') }}
 http_access allow {{ user.username }}_non_ssl_whitelist authenticated
 	{% endif %}
 	{# new-style per-user named whitelists (references to squid_whitelist_domains) #}
