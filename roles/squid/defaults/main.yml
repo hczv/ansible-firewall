@@ -47,10 +47,12 @@ squid_basic_ncsa_auth_path: /usr/lib/squid/basic_ncsa_auth
 # Path to htpasswd file managed by role
 squid_passwd_path: /etc/squid/passwd
 
-# Authentication mode: 'htpasswd' (username/password), 'ip' (source IP ACLs), or 'none'
-squid_auth_mode: htpasswd
+# Authentication mode: kept for compatibility. Default 'both' enables both htpasswd and IP ACLs.
+# You do not need to switch modes — the role supports using both user/password and IP-based
+# allowances simultaneously. Set to 'both', 'htpasswd', or 'ip' if you need to restrict behavior.
+squid_auth_mode: both
 
-# When using `squid_auth_mode: ip` list the allowed source IPs/CIDRs here
+# Legacy: when using `squid_auth_mode: ip` (or when using legacy variables) list allowed source IPs/CIDRs here
 squid_ip_allowed: []
 
 # New-style named domain whitelist lists. Each entry has a `name` and `domains`.

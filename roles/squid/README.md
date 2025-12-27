@@ -2,6 +2,8 @@
 
 Install and configure Squid with optional user authentication, per-user domain whitelisting, and optional HTTPS inspection (SSL bump).
 
+This role supports both username/password authentication and IP-based allowances concurrently — you do not need to switch modes.
+
 ## Requirements
 
 Ansible 2.9+. Role installs `squid` and `apache2-utils` when `squid_auth_users` is set.
@@ -38,6 +40,19 @@ Ansible 2.9+. Role installs `squid` and `apache2-utils` when `squid_auth_users` 
 - `squid_user`, `squid_group` (defaults: `proxy`): account used for `htpasswd` file ownership and to match your distribution (set to `squid` on some distros)
 - `squid_conf_path` (`/etc/squid/squid.conf`): location the role writes the final config
 
+Note on `squid_whitelist_domains` vs `squid_acl_domains`
+
+- `squid_whitelist_domains` are named domain lists intended to be referenced by users or IP groups
+  (via `squid_users` or `squid_ips`) and are primarily used for per-user/IP whitelisting and
+  for SSL-bump splicing (when `squid_ssl_bump_enabled` is true). They are declared once and
+  referenced by name (for example `update-domains_dstdomain` and `update-domains_servername`).
+
+- `squid_acl_domains` is a separate list intended for global "allowed" domain ACLs —
+  rules that simply permit traffic for those domains regardless of per-user/IP named lists.
+
+Keeping these two concepts separate lets you define reusable named whitelists that can be
+applied selectively to users or IP groups, while still having a set of global allowed domains.
+
 ## How to provide certificates and keys
 
 The role copies certificate/key files from the role `files/` directory by basename. For example, if `squid_ssl_bump_cert_path` is `/etc/squid/ssl/squid.pem`, place a file named `squid.pem` in `roles/squid/files/` or set `squid_ssl_bump_cert_path` to a file path under `files/` and provide the matching basename. Alternatively set the variables to absolute paths pointing to files already present on the target.
@@ -72,6 +87,36 @@ squid_acl_domains:
       - .example.com
       - .internal.company.local
 ```
+
+## IP whitelist examples
+
+- Named whitelist applied to IP group (same as above):
+
+```yaml
+squid_whitelist_domains:
+  - name: update-domains
+    domains:
+      - example.com
+
+squid_ips:
+  - ips:
+      - 1.2.3.4
+      - 1.2.4.5
+    whitelists:
+      - update-domains
+```
+
+- Legacy simple IP allow list (no named whitelists):
+
+```yaml
+squid_auth_mode: ip
+squid_ip_allowed:
+  - 10.0.0.0/24
+  - 192.168.1.0/24
+```
+
+The first example shows how to reuse named domain lists for specific IP sets. The second
+example demonstrates the legacy `squid_ip_allowed` which grants source-IP access globally.
 
 ## Example playbook
 

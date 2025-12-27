@@ -53,7 +53,7 @@ http_port {{ squid_port }}
 coredump_dir {{ squid_cache_dir }}
 
 # Add authentication (htpasswd mode)
-{% if squid_auth_mode == 'htpasswd' and ((squid_users | default([])) | length > 0 or (squid_auth_users | default([])) | length > 0) %}
+{% if ((squid_users | default([])) | length > 0) or ((squid_auth_users | default([])) | length > 0) %}
 auth_param basic program {{ squid_basic_ncsa_auth_path }} {{ squid_passwd_path }}
 auth_param basic children 5 startup=5 idle=1
 auth_param basic realm Squid proxy-caching web server
@@ -86,7 +86,7 @@ http_access allow {{ wlname }}_dstdomain authenticated
 {% endfor %}
 
 {# IP-based auth: allow IPs and their referenced whitelist lists #}
-{% if squid_auth_mode == 'ip' %}
+{% if (squid_ip_allowed is defined and squid_ip_allowed | length > 0) or (squid_ips is defined and squid_ips | length > 0) %}
 	{% if squid_ip_allowed is defined and squid_ip_allowed | length > 0 %}
 acl ip_allowed src {{ squid_ip_allowed | join(' ') }}
 http_access allow ip_allowed
@@ -104,11 +104,19 @@ http_access allow {{ wlname }}_dstdomain ip_entry_{{ idx }}
 
 # Add domain-based access control
 {% for acl in squid_acl_domains %}
-acl {{ acl.name }} dstdomain "{{ acl.domains | join(' ') }}"
-{% if squid_auth_mode == 'htpasswd' %}
+acl {{ acl.name }} dstdomain {{ acl.domains | join(' ') }}
+{% if ((squid_users | default([])) | length > 0) or ((squid_auth_users | default([])) | length > 0) %}
 http_access allow {{ acl.name }} authenticated
 {% else %}
 http_access allow {{ acl.name }}
+{% endif %}
+{% if squid_ip_allowed is defined and squid_ip_allowed | length > 0 %}
+http_access allow {{ acl.name }} ip_allowed
+{% endif %}
+{% if squid_ips is defined and squid_ips | length > 0 %}
+	{% for ipset in squid_ips %}
+http_access allow {{ acl.name }} ip_entry_{{ loop.index0 }}
+	{% endfor %}
 {% endif %}
 {% endfor %}
 

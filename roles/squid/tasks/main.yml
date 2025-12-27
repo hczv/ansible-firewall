@@ -11,7 +11,7 @@
       - apache2-utils
       - python3-passlib
     state: present
-  when: (squid_users | default([]) | length > 0 or squid_auth_users | default([]) | length > 0) and squid_auth_mode == 'htpasswd'
+  when: (squid_users | default([]) | length > 0 or squid_auth_users | default([]) | length > 0)
 
 - name: Validate auth user entries
   assert:
@@ -20,7 +20,7 @@
       - "item.password is defined"
     fail_msg: "Each entry in squid_users (or squid_auth_users) must include 'username' and 'password'"
   loop: "{{ (squid_users | default(squid_auth_users | default([]))) }}"
-  when: (squid_users | default([]) | length > 0 or squid_auth_users | default([]) | length > 0) and squid_auth_mode == 'htpasswd'
+  when: (squid_users | default([]) | length > 0 or squid_auth_users | default([]) | length > 0)
 
 
 - name: Create squid password file directory
@@ -38,7 +38,7 @@
     mode: '0640'
   loop: "{{ (squid_users | default(squid_auth_users | default([]))) }}"
   no_log: true
-  when: (squid_users | default([]) | length > 0 or squid_auth_users | default([]) | length > 0) and squid_auth_mode == 'htpasswd'
+  when: (squid_users | default([]) | length > 0 or squid_auth_users | default([]) | length > 0)
 
 - name: Create SSL certificate directory
   file:
@@ -72,8 +72,8 @@
   assert:
     that:
       - (squid_ips is defined and squid_ips | length > 0) or (squid_ip_allowed is defined and squid_ip_allowed | length > 0)
-    fail_msg: "When squid_auth_mode is 'ip' provide either 'squid_ips' (new format) or 'squid_ip_allowed' (legacy)"
-  when: squid_auth_mode == 'ip'
+    fail_msg: "Provide either 'squid_ips' (new format) or 'squid_ip_allowed' (legacy) when using IP allowances"
+  when: (squid_ips is defined and squid_ips | length > 0) or (squid_ip_allowed is defined and squid_ip_allowed | length > 0)
 
 - name: Validate squid_ips item structure (new format)
   assert:
@@ -82,7 +82,7 @@
       - "item.ips | length > 0"
     fail_msg: "Each item in 'squid_ips' must contain a non-empty 'ips' list"
   loop: "{{ squid_ips }}"
-  when: squid_auth_mode == 'ip' and (squid_ips is defined and squid_ips | length > 0)
+  when: (squid_ips is defined and squid_ips | length > 0)
 
 - name: Include copy certificates tasks
   include_tasks: copy_certs.yml
