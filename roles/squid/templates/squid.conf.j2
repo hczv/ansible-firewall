@@ -1,169 +1,326 @@
-#
-# Recommended minimum configuration:
-#
+# ===========================================
+# BASIC SETTINGS
+# ===========================================
 
-# Example rule allowing access from your local networks.
-# Adapt to your needs.
-acl localnet src 10.0.0.0/8     # RFC 1918 A (private networks)
-acl localnet src 172.16.0.0/12  # RFC 1918 B (private networks)
-acl localnet src 192.168.0.0/16 # RFC 1918 C (private networks)
-acl localnet src fc00::/7       # RFC 4193 local private network range
-acl localnet src fe80::/10      # RFC 4291 link-local (directly plugged) machines
+# Standard HTTP proxy port
+http_port 3128
 
+# ===========================================
+# DISABLE CACHING COMPLETELY
+# ===========================================
+
+# Disable all caching
+cache deny all
+
+# No memory cache
+cache_mem 0 MB
+
+# No disk cache
+cache_dir null /tmp
+
+# Disable store
+maximum_object_size 0 KB
+
+# ===========================================
+# AUTHENTICATION (Basic Auth)
+# ===========================================
+
+# Basic authentication using htpasswd file
+auth_param basic program {{ squid_basic_ncsa_auth_path }} {{ squid_passwd_path }}
+auth_param basic children 5 startup=1 idle=1
+auth_param basic realm Squid Proxy Authentication
+auth_param basic credentialsttl 2 hours
+
+# ===========================================
+# ACL DEFINITIONS
+# ===========================================
+
+# --- Standard Port ACLs ---
 acl SSL_ports port 443
 acl Safe_ports port 80          # http
-acl Safe_ports port 21          # ftp
 acl Safe_ports port 443         # https
-acl Safe_ports port 70          # gopher
-acl Safe_ports port 210         # wais
-acl Safe_ports port 1025-65535  # unregistered ports
-acl Safe_ports port 280         # http-mgmt
-acl Safe_ports port 488         # gss-http
-acl Safe_ports port 591         # filemaker
-acl Safe_ports port 777         # multiling http
 
+# Method ACLs
 acl CONNECT method CONNECT
 
+{% for whitelist_ip in (squid_whitelist_ips | default([])) %}
+{% for ip in (whitelist_ip.ips | default([])) %}
+acl {{ whitelist_ip.name }}_ips src {{ ip }}
+{% endfor %}
+{% endfor %}
+
+# --- IP/Subnet Based ACLs ---
+# Group 1: Office network
+#acl ip_office src 192.168.1.0/24
+
+# Group 2: Specific server
+#acl ip_server src 10.0.0.0/8
+
+# Group 3: VPN network
+#acl ip_vpn src 172.16.0.0/16
+
+# Group 4: Management IPs
+#acl ip_management src 192.168.100.10 192.168.100.11 192.168.100.12
+
+# Localhost
+acl localhost src 127.0.0.1/32 ::1
+
+# --- User Based ACLs ---
+acl authenticated proxy_auth REQUIRED
+
+# Individual users and groups
+{% for whitelist_user in (squid_whitelist_users | default([])) %}
+acl user_{{ whitelist_user.username }} proxy_auth {{ whitelist_user.username }}
+{% endfor %}
+
+#acl user_admin proxy_auth admin administrator
+#acl user_developer proxy_auth developer john jane bob alice
+#acl user_marketing proxy_auth marketing sarah mike lisa
+#acl user_support proxy_auth support helpdesk
+
+# ===========================================
+# DOMAIN ACLs (for both HTTP and HTTPS)
+# ===========================================
+
+# --- Domains for IP-based access ---
+
+squid_whitelists: []
+#- name: update-sites
+#  domains:
+#  - mirrors.almalinux.org
+
+{% for whitelist_domains in (squid_whitelists | default([])) %}
+{% for domain in (whitelist_domains.domains | default([])) %}
+acl whitelist_{{ whitelist_domains.name }} dstdomain {{ domain }}
+{% endfor %}
+{% endfor %}
+
+# Domains for office network (Group 1)
+#acl domains_office dstdomain .google.com
+#acl domains_office dstdomain .google.co.uk
+#acl domains_office dstdomain .googleapis.com
+#acl domains_office dstdomain .gstatic.com
+#acl domains_office dstdomain .github.com
+#acl domains_office dstdomain .githubusercontent.com
+#acl domains_office dstdomain .stackoverflow.com
+#acl domains_office dstdomain .stackexchange.com
+#acl domains_office dstdomain .microsoft.com
+#acl domains_office dstdomain .office.com
+#acl domains_office dstdomain .office365.com
+#acl domains_office dstdomain .live.com
+#acl domains_office dstdomain .windows.net
 #
-# Recommended minimum Access Permission configuration:
+## Domains for specific server (Group 2)
+#acl domains_server dstdomain .internal-api.company.com
+#acl domains_server dstdomain .api.company.com
+#acl domains_server dstdomain .services.company.com
+#acl domains_server dstdomain .updates.company.com
+#acl domains_server dstdomain .google.com
 #
-# Deny requests to certain unsafe ports
+## Domains for VPN network (Group 3)
+#acl domains_vpn dstdomain .azure.com
+#acl domains_vpn dstdomain .amazonaws.com
+#acl domains_vpn dstdomain .aws.amazon.com
+#acl domains_vpn dstdomain .cloudflare.com
+#
+## Domains for management IPs
+#acl domains_management dstdomain .company.com
+#acl domains_management dstdomain .internal.company.com
+#
+# --- Domains for User-based access ---
+#
+## Developer domains
+#acl domains_developer dstdomain .github.com
+#acl domains_developer dstdomain .githubusercontent.com
+#acl domains_developer dstdomain .gitlab.com
+#acl domains_developer dstdomain .bitbucket.org
+#acl domains_developer dstdomain .stackoverflow.com
+#acl domains_developer dstdomain .stackexchange.com
+#acl domains_developer dstdomain .npmjs.com
+#acl domains_developer dstdomain .npmjs.org
+#acl domains_developer dstdomain .yarnpkg.com
+#acl domains_developer dstdomain .pypi.org
+#acl domains_developer dstdomain .pypi.python.org
+#acl domains_developer dstdomain .pythonhosted.org
+#acl domains_developer dstdomain .docker.com
+#acl domains_developer dstdomain .docker.io
+#acl domains_developer dstdomain .hub.docker.com
+#acl domains_developer dstdomain .maven.org
+#acl domains_developer dstdomain .maven.apache.org
+#acl domains_developer dstdomain .rubygems.org
+#acl domains_developer dstdomain .packagist.org
+#acl domains_developer dstdomain .nuget.org
+#acl domains_developer dstdomain .crates.io
+#acl domains_developer dstdomain .golang.org
+#acl domains_developer dstdomain .pkg.go.dev
+#acl domains_developer dstdomain .rust-lang.org
+#acl domains_developer dstdomain .docs.rs
+#acl domains_developer dstdomain .mozilla.org
+#acl domains_developer dstdomain .developer.mozilla.org
+#acl domains_developer dstdomain .w3.org
+#
+## Marketing domains
+#acl domains_marketing dstdomain .google.com
+#acl domains_marketing dstdomain .googleapis.com
+#acl domains_marketing dstdomain .googletagmanager.com
+#acl domains_marketing dstdomain .google-analytics.com
+#acl domains_marketing dstdomain .analytics.google.com
+#acl domains_marketing dstdomain .facebook.com
+#acl domains_marketing dstdomain .fb.com
+#acl domains_marketing dstdomain .fbcdn.net
+#acl domains_marketing dstdomain .instagram.com
+#acl domains_marketing dstdomain .linkedin.com
+#acl domains_marketing dstdomain .licdn.com
+#acl domains_marketing dstdomain .twitter.com
+#acl domains_marketing dstdomain .x.com
+#acl domains_marketing dstdomain .twimg.com
+#acl domains_marketing dstdomain .youtube.com
+#acl domains_marketing dstdomain .youtu.be
+#acl domains_marketing dstdomain .ytimg.com
+#acl domains_marketing dstdomain .hootsuite.com
+#acl domains_marketing dstdomain .buffer.com
+#acl domains_marketing dstdomain .mailchimp.com
+#acl domains_marketing dstdomain .hubspot.com
+#acl domains_marketing dstdomain .salesforce.com
+#acl domains_marketing dstdomain .canva.com
+#acl domains_marketing dstdomain .adobe.com
+#acl domains_marketing dstdomain .creativecloud.com
+#
+## Support domains
+#acl domains_support dstdomain .zendesk.com
+#acl domains_support dstdomain .freshdesk.com
+#acl domains_support dstdomain .intercom.com
+#acl domains_support dstdomain .slack.com
+#acl domains_support dstdomain .slack-edge.com
+#acl domains_support dstdomain .teams.microsoft.com
+#acl domains_support dstdomain .zoom.us
+#acl domains_support dstdomain .zoom.com
+#acl domains_support dstdomain .webex.com
+#acl domains_support dstdomain .gotomeeting.com
+#
+## --- Common/Shared domains (allowed for all authenticated users) ---
+#acl domains_common dstdomain .company.com
+#acl domains_common dstdomain .google.com
+#acl domains_common dstdomain .gstatic.com
+
+# ===========================================
+# HTTP ACCESS RULES
+# ===========================================
+
+# --- Security Rules (First) ---
+
+# Deny requests to unsafe ports
 http_access deny !Safe_ports
 
-# Deny CONNECT to other than SSL ports
+# Deny CONNECT to non-SSL ports
 http_access deny CONNECT !SSL_ports
 
-# Only allow cachemgr access from localhost
-http_access allow localhost manager
-http_access deny manager
+# --- Allow localhost (no auth required) ---
+#http_access allow localhost
 
-# We strongly recommend to not allow access to your cache from people outside your local network!
-#
-# Example rule allowing your local "internal" networks, but denying all others access
-http_access allow localnet
-http_access allow localhost
+# ===========================================
+# IP-BASED ACCESS RULES (No authentication)
+# ===========================================
 
-# And finally deny all other access to this proxy
-
-
-# Squid normally listens to port 3128
-http_port {{ squid_port }}
-
-# Leave coredumps in the first cache dir
-coredump_dir {{ squid_cache_dir }}
-
-# Add authentication (htpasswd mode)
-{% if ((squid_users | default([])) | length > 0) or ((squid_auth_users | default([])) | length > 0) %}
-auth_param basic program {{ squid_basic_ncsa_auth_path }} {{ squid_passwd_path }}
-auth_param basic children 5 startup=5 idle=1
-auth_param basic realm Squid proxy-caching web server
-auth_param basic credentialsttl 2 hours
-acl authenticated proxy_auth REQUIRED
-http_access allow authenticated
-{% endif %}
-
-{# Named domain whitelist lists (new style) #}
-{% for wl in (squid_whitelist_domains | default([])) %}
-acl {{ wl.name }}_dstdomain dstdomain {{ wl.domains | join(' ') }}
-{% if squid_ssl_bump_enabled %}
-acl {{ wl.name }}_servername ssl::server_name {{ wl.domains | join(' ') }}
-{% endif %}
+{% for whitelist_ip in (squid_whitelist_ips | default([])) %}
+{% for whitelist in (whitelist_ip.whitelists | default([])) %}
+http_access allow {{ whitelist_ip.name }}_ips whitelist_{{ whitelist }}
+{% endfor %}
 {% endfor %}
 
-{# Per-user non-SSL whitelists: support new `squid_users` (or legacy `squid_auth_users`) #}
-{% for user in (squid_users | default(squid_auth_users | default([]))) %}
-	{# legacy per-user non-ssl list (explicit domains) #}
-	{% if user.non_ssl_whitelist is defined and user.non_ssl_whitelist | length > 0 %}
-acl {{ user.username }}_non_ssl_whitelist dstdomain {{ user.non_ssl_whitelist | join(' ') }}
-http_access allow {{ user.username }}_non_ssl_whitelist authenticated
-	{% endif %}
-	{# new-style per-user named whitelists (references to squid_whitelist_domains) #}
-	{% if user.whitelists is defined and user.whitelists | length > 0 %}
-		{% for wlname in user.whitelists %}
-http_access allow {{ wlname }}_dstdomain authenticated
-		{% endfor %}
-	{% endif %}
+# Management IPs - access to company resources
+http_access allow ip_management domains_management
+
+# Office network - access to office domains
+http_access allow ip_office domains_office
+
+# Server - access to API/internal domains
+http_access allow ip_server domains_server
+
+# VPN network - access to cloud domains
+http_access allow ip_vpn domains_vpn
+
+# ===========================================
+# USER-BASED ACCESS RULES (Requires authentication)
+# ===========================================
+
+{% for whitelist_user in (squid_whitelist_users | default([])) %}
+{% for whitelist in (whitelist_user.whitelists | default([])) %}
+http_access allow user_{{ whitelist_user.username }} whitelist_{{ whitelist_domains.name }}
+{% endfor %}
 {% endfor %}
 
-{# IP-based auth: allow IPs and their referenced whitelist lists #}
-{% if (squid_ip_allowed is defined and squid_ip_allowed | length > 0) or (squid_ips is defined and squid_ips | length > 0) %}
-	{% if squid_ip_allowed is defined and squid_ip_allowed | length > 0 %}
-acl ip_allowed src {{ squid_ip_allowed | join(' ') }}
-http_access allow ip_allowed
-	{% endif %}
-	{% for ipset in (squid_ips | default([])) %}
-		{% set idx = loop.index0 %}
-acl ip_entry_{{ idx }} src {{ ipset.ips | join(' ') }}
-		{% if ipset.whitelists is defined and ipset.whitelists | length > 0 %}
-			{% for wlname in ipset.whitelists %}
-http_access allow {{ wlname }}_dstdomain ip_entry_{{ idx }}
-			{% endfor %}
-		{% endif %}
-	{% endfor %}
-{% endif %}
+# Admin users - FULL unrestricted access
+#http_access allow user_admin
 
-# Add domain-based access control
-{% for acl in squid_acl_domains %}
-acl {{ acl.name }} dstdomain {{ acl.domains | join(' ') }}
-{% if ((squid_users | default([])) | length > 0) or ((squid_auth_users | default([])) | length > 0) %}
-http_access allow {{ acl.name }} authenticated
-{% else %}
-http_access allow {{ acl.name }}
-{% endif %}
-{% if squid_ip_allowed is defined and squid_ip_allowed | length > 0 %}
-http_access allow {{ acl.name }} ip_allowed
-{% endif %}
-{% if squid_ips is defined and squid_ips | length > 0 %}
-	{% for ipset in squid_ips %}
-http_access allow {{ acl.name }} ip_entry_{{ loop.index0 }}
-	{% endfor %}
-{% endif %}
-{% endfor %}
+# Developers - access to development resources
+#http_access allow user_developer domains_developer
 
-# SSL Bumping
-{% if squid_ssl_bump_enabled %}
-http_port {{ squid_port }} ssl-bump cert={{ squid_ssl_bump_cert_path }} key={{ squid_ssl_bump_key_path }} generate-host-certificates=on dynamic_cert_mem_cache_size=4MB
-always_direct allow all
-ssl_bump stare all
-ssl_bump bump all
-sslproxy_cert_error allow all
-sslproxy_flags DONT_VERIFY_PEER
-acl SslBumpCertError ssl_error SQUID_X509_V_ERR_DOMAIN_MISMATCH
-http_access allow SslBumpCertError
-acl step1 at_step SslBump1
-acl step2 at_step SslBump2
-acl step3 at_step SslBump3
+# Marketing - access to marketing/social platforms
+#http_access allow user_marketing domains_marketing
 
-# Whitelisting for SSL Bumping
-{# Splice (do not bump) for named whitelist domain lists when SSL bumping is enabled.
-	 We declare server_name ACLs above and splice them here. This mirrors prior behavior
-	 where per-user whitelist ACLs were used (they were global in effect).
- #}
-{% if (squid_whitelist_domains | default([])) | length > 0 %}
-	{% for wl in (squid_whitelist_domains | default([])) %}
-ssl_bump splice {{ wl.name }}_servername
-	{% endfor %}
-{% endif %}
+# Support - access to support tools
+#http_access allow user_support domains_support
 
+# All authenticated users - access to common domains
+#http_access allow authenticated domains_common
 
-ssl_bump peek step1
-ssl_bump bump step2
-ssl_bump splice step3
-{% endif %}
+# ===========================================
+# DEFAULT DENY RULE (Must be last)
+# ===========================================
 
-# Final default deny — placed after all allow rules
+# Deny everything else
 http_access deny all
 
-# We recommend to use the following parameters for a first good experience:
-#
-# cache_mem 256 MB
-# maximum_object_size 4 MB
-# maximum_object_size_in_memory 512 KB
-#
-# cache_dir ufs /var/spool/squid 10000 16 256
-#
-# For more details, see the Squid configuration file documentation.
-#
-cache_dir ufs {{ squid_cache_dir }} {{ squid_cache_size }} 16 256
-maximum_object_size {{ squid_max_object_size }}
-maximum_object_size_in_memory {{ squid_max_object_size_in_memory }}
+# ===========================================
+# LOGGING CONFIGURATION
+# ===========================================
+
+# Standard log format
+logformat combined %>a %[ui %[un [%tl] "%rm %ru HTTP/%rv" %>Hs %<st "%{Referer}>h" "%{User-Agent}>h" %Ss:%Sh
+
+# Access log
+access_log /var/log/squid/access.log combined
+
+# Cache/debug log
+cache_log /var/log/squid/cache.log
+
+# Store log (disabled since no caching)
+cache_store_log none
+
+# Debug options (increase for troubleshooting)
+debug_options ALL,1
+
+# ===========================================
+# MISCELLANEOUS SETTINGS
+# ===========================================
+
+# Visible hostname in error pages
+visible_hostname squid-proxy.company.com
+
+# Admin email for error pages
+cache_mgr proxy-admin@company.com
+
+# Coredump directory
+coredump_dir /var/spool/squid
+
+# Shutdown lifetime
+shutdown_lifetime 3 seconds
+
+# DNS settings
+dns_v4_first on
+
+# Client request limits
+request_header_max_size 64 KB
+request_body_max_size 0 KB
+
+# Connection timeouts
+connect_timeout 60 seconds
+read_timeout 15 minutes
+client_lifetime 1 day
+
+# Forwarded-For header (privacy consideration)
+forwarded_for delete
+
+# Via header
+via off
