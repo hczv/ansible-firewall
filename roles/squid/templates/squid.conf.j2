@@ -246,7 +246,7 @@ http_access allow ip_vpn domains_vpn
 
 {% for whitelist_user in (squid_whitelist_users | default([])) %}
 {% for whitelist in (whitelist_user.whitelists | default([])) %}
-http_access allow user_{{ whitelist_user.username }} whitelist_{{ whitelist_domains.name }}
+http_access allow user_{{ whitelist_user.username }} whitelist_{{ whitelist }}
 {% endfor %}
 {% endfor %}
 

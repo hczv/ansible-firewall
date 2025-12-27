@@ -18,7 +18,7 @@
     that:
       - "item.username is defined"
       - "item.password is defined"
-    fail_msg: "Each entry in squid_users (or squid_auth_users) must include 'username' and 'password'"
+    fail_msg: "Each entry in squid_whitelist_users must include 'username' and 'password'"
   loop: "{{ squid_whitelist_users | default([]) }}"
   when: squid_whitelist_users | default([]) | length > 0
 
@@ -27,6 +27,7 @@
     path: /etc/squid
     state: directory
     mode: '0755'
+
 - name: Create squid password file
   htpasswd:
     path: "{{ squid_passwd_path }}"

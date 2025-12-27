@@ -31,6 +31,6 @@ squid_whitelist_ips: []
 
 squid_whitelist_users: []
 #  - username: proxy_user
-#    passowrd: proxy_password
+#    password: proxy_password
 #    whitelists:
 #    - update-sites
