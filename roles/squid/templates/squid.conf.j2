@@ -229,16 +229,16 @@ http_access allow {{ whitelist_ip.name }}_ips whitelist_{{ whitelist }}
 {% endfor %}
 
 # Management IPs - access to company resources
-http_access allow ip_management domains_management
+#http_access allow ip_management domains_management
 
 # Office network - access to office domains
-http_access allow ip_office domains_office
+#http_access allow ip_office domains_office
 
 # Server - access to API/internal domains
-http_access allow ip_server domains_server
+#http_access allow ip_server domains_server
 
 # VPN network - access to cloud domains
-http_access allow ip_vpn domains_vpn
+#http_access allow ip_vpn domains_vpn
 
 # ===========================================
 # USER-BASED ACCESS RULES (Requires authentication)
