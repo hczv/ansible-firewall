@@ -540,3 +540,127 @@ nftables_rules_forward:
         - 443
 ```
 
+# Policy-Based Routing (PBR) Example
+
+This section illustrates how to implement Policy-Based Routing (PBR) using this Ansible role. PBR allows for more granular control over network traffic by directing packets through different routing tables based on specific criteria, such as source IP, destination IP or destination port. The implementation within this repository has three focuses:
+
+1.  **Creating Custom IP Routing Tables**: Defining additional routing tables beyond the default main table.
+2.  **Marking Traffic**: Applying marks to network packets using `nftables` rules based on defined criteria.
+3.  **Assigning Marked Traffic to Routing Tables**: Creating `ip rule` that direct traffic with specific marks to the appropriate custom routing table.
+
+### 1. Define a Custom Routing Table
+
+First, define the custom routing table in `nftables_routing_tables`. This example creates a table named `pbr` with a unique ID and a corresponding mark. This mark will be used later to associate traffic with this routing table.
+
+```yaml
+nftables_routing_tables:
+  - name: pbr
+    id: 123
+    mark: "0x3"
+```
+
+### 2. Mark Traffic for the Routing Table
+
+Next, define `nftables` rules to mark the traffic that should utilize the `pbr` routing table. In this example, we create a `prerouting_filter` chain and use `ct_mark_set` and `meta_mark_set` operations to apply the mark `0x3` (which corresponds to our `pbr` routing table) to traffic originating from hosts defined in the `pbr-hosts` set.
+
+Additionally, a rule is included to remove the PBR mark from local traffic (RFC 1918 addresses) to ensure that return traffic for SSH connections, for instance, is not misrouted. This is crucial for maintaining connectivity to the host itself.
+
+```yaml
+nftables_sets_pbr:
+  - name: pbr-hosts
+    subnets:
+      - 10.20.30.40
+      - 10.20.30.41
+      - 10.20.30.42
+  - name: rfc_1918
+    subnets:
+      - 10.0.0.0/8
+      - 172.16.0.0/12
+      - 192.168.0.0/16
+
+nftables_chains_prerouting_filter:
+  - name: prerouting_filter
+    type: filter
+    hook: prerouting
+    priority: mangle
+    policy: accept
+
+nftables_rules_prerouting_pbr:
+  - name: Mark traffic for pbr routing table
+    chain: prerouting_filter
+    operations:
+        # Mark from the nftables_routing_tables entry
+      - ct_mark_set: "0x00000003"
+      - meta_mark_set: "ct mark"
+    sources:
+      - sets:
+        - pbr-hosts
+
+  - name: Remove PBR mark from local traffic (e.g., SSH return traffic)
+    chain: prerouting_filter
+    operations:
+      - ct_mark_set: "0x00000000"
+      - meta_mark_set: "ct mark"
+    sources:
+      - sets:
+        - pbr-hosts
+    destinations:
+      - sets:
+        - rfc_1918
+```
+
+### 3. Verify PBR Configuration
+
+After applying the Ansible role, you can verify the PBR configuration using the following commands:
+
+#### 3.1. Verify IP Table Creation
+
+To confirm that the custom IP routing table has been successfully created, execute the following command. The output should include the `pbr` table (or whatever name you assigned).
+
+```sh
+ip route show table all | grep "table" | sed 's/.*\(table.*\)/\1/g' | awk '{print $2}' | sort | uniq
+```
+
+#### 3.2. Verify IP Rule
+
+To ensure that the `ip rule` is correctly configured to match the `nftables` marked traffic and forward it to the custom IP routing table, use the following command. You should see a rule that directs traffic with the specified mark to your custom table.
+
+```sh
+ip rule show
+```
+
+
+## Integrating PBR with OpenVPN
+
+This section outlines how to leverage Policy-Based Routing (PBR) in conjunction with OpenVPN to route specific host traffic through a VPN tunnel. It's important to note that the OpenVPN client setup and configuration are outside the scope of this Ansible role, and users will need to implement them separately.
+
+### 1. OpenVPN `up` Script for Routing Table Configuration
+
+To direct traffic through the VPN tunnel using PBR, you'll need an OpenVPN `up` script that adds a default route for your VPN interface (`tun0` in this example) to a custom routing table. This script should be placed, for instance, at `/etc/openvpn/route-up.sh`:
+
+```sh
+#!/bin/bash
+# the id "123" is from the `nftables_routing_tables` example above
+ip route add default dev tun0 table 123
+```
+
+### 2. OpenVPN Client Configuration
+
+Modify your OpenVPN client configuration to utilize the `up` script and prevent the OpenVPN client from pulling routes automatically, as PBR will handle the routing. Ensure the `script-security 2` option is set to allow script execution.
+
+```
+client
+...
+# Prevent OpenVPN from automatically pulling routes
+route-nopull
+script-security 2
+up /etc/openvpn/route-up.sh
+...
+```
+
+### 3. Directing Traffic via PBR
+
+With this setup, you can now specify which hosts' traffic should be routed over the VPN. By adding the IP addresses of these hosts to the `pbr-hosts` set (as defined in the PBR example), the `nftables` rules will mark their traffic, and the IP rules will then direct this marked traffic to the custom routing table (table `123` in this example), effectively sending it through the OpenVPN tunnel.
+
+This approach provides a flexible way to selectively route traffic through your VPN based on your specific network policies.
+
